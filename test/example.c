@@ -56,8 +56,8 @@ void lsh_test_type2(lsh_type algtype){
 		return;
 	}
 
-	input_file = fopen("input.txt", "r");
-	output_file = fopen("output.txt", "w");
+	input_file = fopen("Hash_test/input.txt", "r");
+	output_file = fopen("Hash_test/output.txt", "w");
 	fgets(data, MAX_LEN, input_file);	// remove first lines
 	fgets(data, MAX_LEN, input_file);
 	data[strlen(data) - 1] = '\0';
@@ -152,21 +152,16 @@ int main(){
 	char *algtype = NULL;
 	char str_alg[MAX_LEN];
 
-	input_file = fopen("input.txt", "r");
+	input_file = fopen("Hash_test/input.txt", "r");
 
 	if(input_file != NULL)
 	{
 		fgets(str_alg, MAX_LEN, input_file);
-
-		if(strstr(str_alg, "LSH") != NULL)
-		{
-			algtype = strstr(str_alg, "LSH");		// get LSH algorithm type
-			algtype[strlen(algtype) - 1] = '\0';
-		}
+		algtype = strstr(str_alg, "LSH");		// get LSH algorithm type
 	}
 	else
 	{
-		printf("couldn't file open");
+		printf("file does not exist");
 		return 0;
 	}
 
@@ -174,6 +169,7 @@ int main(){
 
 	// call lsh function
 	if(algtype != NULL) {
+	  algtype[strlen(algtype) - 1] = '\0';
 		if(!strcmp(algtype, "LSH-256_224"))
 			lsh_test_type2(LSH_TYPE_256_224);
 		else if(!strcmp(algtype, "LSH-256_256"))
@@ -187,16 +183,10 @@ int main(){
 		else if(!strcmp(algtype, "LSH-512_512"))
 			lsh_test_type2(LSH_TYPE_512_512);
 		else
-		{
 			printf("unknown algtype: %s \n", algtype);
-			return 0;
-		}
 	}
 	else
-	{
 		printf("algtype setting failed \n");
-		return 0;
-	}
 
 	return 0;
 }

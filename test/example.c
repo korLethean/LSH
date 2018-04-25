@@ -169,7 +169,7 @@ int main(){
 
 	// call lsh function
 	if(algtype != NULL) {
-	  algtype[strlen(algtype) - 1] = '\0';
+	  algtype[strlen(algtype) - 1] = '\0';	// remove LF character
 		if(!strcmp(algtype, "LSH-256_224"))
 			lsh_test_type2(LSH_TYPE_256_224);
 		else if(!strcmp(algtype, "LSH-256_256"))
@@ -182,11 +182,11 @@ int main(){
 			lsh_test_type2(LSH_TYPE_512_384);
 		else if(!strcmp(algtype, "LSH-512_512"))
 			lsh_test_type2(LSH_TYPE_512_512);
-		else
-			printf("unknown algtype: %s \n", algtype);
+		else	// LSH type typo
+			printf("unknown LSH type: %s \n", algtype);
 	}
-	else
-		printf("algtype setting failed \n");
+	else		// excluding other algorithm or typo
+		printf("algorithm type reading failed \n");
 
 	return 0;
 }

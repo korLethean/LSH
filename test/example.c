@@ -25,10 +25,13 @@
 #include "../include/lsh.h"
 #include "../include/hmac.h"
 
+#define MAX_FILE_NAME_LEN 256
+
 #pragma warning(disable: 4996)
 
 void lsh_test_type2(lsh_type algtype){
 	FILE *input_file, *output_file;
+	char input_file_name[MAX_FILE_NAME_LEN], output_file_name[MAX_FILE_NAME_LEN];
 	const lsh_uint MAX_LEN = 1024;
 
 	size_t datalen;
@@ -56,11 +59,13 @@ void lsh_test_type2(lsh_type algtype){
 		return;
 	}
 
-	input_file = fopen("Hash_test/input.txt", "r");
-	output_file = fopen("Hash_test/output.txt", "w");
-	fgets(data, MAX_LEN, input_file);	// remove first lines
+	sprintf(input_file_name, "Hash_test/LSH-%d_%d.txt", bits, LSH_GET_HASHBIT(algtype));
+	sprintf(output_file_name, "Hash_test/LSH-%d_%d_rsp.txt", bits, LSH_GET_HASHBIT(algtype));
+	input_file = fopen(input_file_name, "r");
+	output_file = fopen(output_file_name, "w");
+	fgets(data, MAX_LEN, input_file);	// remove first line
 	fgets(data, MAX_LEN, input_file);
-	data[strlen(data) - 1] = '\0';
+	data[strlen(data) - 1] = '\0';		// remove LF character
 
 	for(int temp = 10, index = 0; temp < strlen(data); temp++)
 		p_lines[index++] = data[temp];
@@ -138,8 +143,8 @@ void lsh_test_type2(lsh_type algtype){
 		fprintf(output_file, "\n");
 	}
 
-	printf("== Test Vector from input.txt ==\n");
-	printf("== Test Result saved at output.txt ==\n");
+	printf("== Test Vector from %s ==\n", input_file_name);
+	printf("== Test Result saved at %s ==\n", output_file_name);
 	printf("== Test End==\n");
 	fclose(input_file);
 	fclose(output_file);
@@ -148,45 +153,58 @@ void lsh_test_type2(lsh_type algtype){
 
 int main(){
 	FILE *input_file;
+	char file_name[MAX_FILE_NAME_LEN];
+	lsh_uint bits[2] = {256, 512};
+	lsh_uint hashbits[4] = {224, 256, 384, 512};
 	const lsh_uint MAX_LEN = 1024;
 	char *algtype = NULL;
 	char str_alg[MAX_LEN];
 
-	input_file = fopen("Hash_test/input.txt", "r");
-
-	if(input_file != NULL)
+	for(int b = 0 ; b < 2 ; b++)
 	{
-		fgets(str_alg, MAX_LEN, input_file);
-		algtype = strstr(str_alg, "LSH");		// get LSH algorithm type
-	}
-	else
-	{
-		printf("file does not exist");
-		return 0;
-	}
+		for(int h = 0 ; h < 4 ; h++)
+		{
+			if(b < 1 && h > 1)
+				break;
+			sprintf(file_name, "Hash_test/LSH-%d_%d.txt", bits[b], hashbits[h]);
+			input_file = fopen(file_name, "r");
 
-	fclose(input_file);
+			if(input_file != NULL)
+			{
+				fgets(str_alg, MAX_LEN, input_file);
+				algtype = strstr(str_alg, "LSH");		// get LSH algorithm type
+			}
+			else
+			{
+				printf("file does not exist");
+				return 0;
+			}
 
-	// call lsh function
-	if(algtype != NULL) {
-	  algtype[strlen(algtype) - 1] = '\0';	// remove LF character
-		if(!strcmp(algtype, "LSH-256_224"))
-			lsh_test_type2(LSH_TYPE_256_224);
-		else if(!strcmp(algtype, "LSH-256_256"))
-			lsh_test_type2(LSH_TYPE_256_256);
-		else if(!strcmp(algtype, "LSH-512_224"))
-			lsh_test_type2(LSH_TYPE_512_224);
-		else if(!strcmp(algtype, "LSH-512_256"))
-			lsh_test_type2(LSH_TYPE_512_256);
-		else if(!strcmp(algtype, "LSH-512_384"))
-			lsh_test_type2(LSH_TYPE_512_384);
-		else if(!strcmp(algtype, "LSH-512_512"))
-			lsh_test_type2(LSH_TYPE_512_512);
-		else	// LSH type typo
-			printf("unknown LSH type: %s \n", algtype);
+			fclose(input_file);
+
+			// call lsh function
+			if(algtype != NULL)
+			{
+			  algtype[strlen(algtype) - 1] = '\0';	// remove LF character
+				if(!strcmp(algtype, "LSH-256_224"))
+					lsh_test_type2(LSH_TYPE_256_224);
+				else if(!strcmp(algtype, "LSH-256_256"))
+					lsh_test_type2(LSH_TYPE_256_256);
+				else if(!strcmp(algtype, "LSH-512_224"))
+					lsh_test_type2(LSH_TYPE_512_224);
+				else if(!strcmp(algtype, "LSH-512_256"))
+					lsh_test_type2(LSH_TYPE_512_256);
+				else if(!strcmp(algtype, "LSH-512_384"))
+					lsh_test_type2(LSH_TYPE_512_384);
+				else if(!strcmp(algtype, "LSH-512_512"))
+					lsh_test_type2(LSH_TYPE_512_512);
+				else	// LSH type typo
+					printf("unknown LSH type: %s \n", algtype);
+			}
+			else		// excluding other algorithm or typo
+				printf("algorithm type reading failed \n");
+		}
 	}
-	else		// excluding other algorithm or typo
-		printf("algorithm type reading failed \n");
 
 	return 0;
 }

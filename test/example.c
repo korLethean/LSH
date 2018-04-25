@@ -26,16 +26,16 @@
 #include "../include/hmac.h"
 
 #define MAX_FILE_NAME_LEN 256
+#define MAX_READ_LEN 1024
 
 #pragma warning(disable: 4996)
 
 void lsh_test_type2(lsh_type algtype){
 	FILE *input_file, *output_file;
 	char input_file_name[MAX_FILE_NAME_LEN], output_file_name[MAX_FILE_NAME_LEN];
-	const lsh_uint MAX_LEN = 1024;
 
 	size_t datalen;
-	lsh_u8 data[256 * 4];
+	lsh_u8 data[256 * 3907];
 	lsh_u8 hash[LSH512_HASH_VAL_MAX_BYTE_LEN];
 	lsh_u8 p_lines[10];
 	lsh_uint lines;
@@ -63,8 +63,8 @@ void lsh_test_type2(lsh_type algtype){
 	sprintf(output_file_name, "Hash_test/LSH-%d_%d_rsp.txt", bits, LSH_GET_HASHBIT(algtype));
 	input_file = fopen(input_file_name, "r");
 	output_file = fopen(output_file_name, "w");
-	fgets(data, MAX_LEN, input_file);	// remove first line
-	fgets(data, MAX_LEN, input_file);
+	fgets(data, MAX_READ_LEN, input_file);	// remove first line
+	fgets(data, MAX_READ_LEN, input_file);
 	data[strlen(data) - 1] = '\0';		// remove LF character
 
 	for(int temp = 10, index = 0; temp < strlen(data); temp++)
@@ -73,10 +73,10 @@ void lsh_test_type2(lsh_type algtype){
 
 	printf("\n== Test Vector for LSH-%d-%d ==\n", bits, LSH_GET_HASHBIT(algtype));
 	printf("number of test vector: %d \n", lines);
-	fprintf(output_file, "Algo_ID = LSH-%d_%d", bits, LSH_GET_HASHBIT(algtype));	//output text
+	fprintf(output_file, "Algo_ID = LSH-%d_%d \n", bits, LSH_GET_HASHBIT(algtype));	//output text
 	for(loop_count = 0 ; loop_count < lines ; loop_count++)
 	{
-		fgets(data, MAX_LEN, input_file);
+		fgets(data, MAX_READ_LEN, input_file);
 		data[strlen(data) - 1] = '\0';
 		// remove LF character created by fgets function
 
@@ -130,14 +130,11 @@ void lsh_test_type2(lsh_type algtype){
 
 			printf("%02x", hash[k]);
 
-			if(!(k % 14))	//output text
-				fprintf(output_file, "\n");
 			fprintf(output_file, "%02x", hash[k]);
 
 			if (k % 4 == 3){
 				printf(" ");
 			}
-
 		}
 		printf("\n\n");
 		fprintf(output_file, "\n");
@@ -156,9 +153,8 @@ int main(){
 	char file_name[MAX_FILE_NAME_LEN];
 	lsh_uint bits[2] = {256, 512};
 	lsh_uint hashbits[4] = {224, 256, 384, 512};
-	const lsh_uint MAX_LEN = 1024;
 	char *algtype = NULL;
-	char str_alg[MAX_LEN];
+	char str_alg[MAX_READ_LEN];
 
 	for(int b = 0 ; b < 2 ; b++)
 	{
@@ -171,7 +167,7 @@ int main(){
 
 			if(input_file != NULL)
 			{
-				fgets(str_alg, MAX_LEN, input_file);
+				fgets(str_alg, MAX_READ_LEN, input_file);
 				algtype = strstr(str_alg, "LSH");		// get LSH algorithm type
 			}
 			else

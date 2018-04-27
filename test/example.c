@@ -27,6 +27,7 @@
 
 #define MAX_FILE_NAME_LEN 256
 #define MAX_READ_LEN 1024
+#define MAX_DATA_LEN 1000000	// original 256 * 4
 
 #pragma warning(disable: 4996)
 
@@ -35,7 +36,7 @@ void lsh_test_type2(lsh_type algtype){
 	char input_file_name[MAX_FILE_NAME_LEN], output_file_name[MAX_FILE_NAME_LEN];
 
 	size_t datalen;
-	lsh_u8 data[256 * 3907];
+	lsh_u8 data[MAX_DATA_LEN];
 	lsh_u8 hash[LSH512_HASH_VAL_MAX_BYTE_LEN];
 	lsh_u8 p_lines[10];
 	lsh_uint lines;
@@ -83,17 +84,31 @@ void lsh_test_type2(lsh_type algtype){
 		for(i = 0, o = 0 ; i < strlen(data) ; i++)
 		{	// remove " character
 			if(data[i] != '\"')
-			{
-				data[o] = data[i];
-				o++;
-			}
+				data[o++] = data[i];
 		}
 		data[o] = '\0';	// add NULL character at the end of String
 		datalen = strlen(data);
 		databitlen = datalen * 8;
 
+		if(datalen == 1 && data[0] == 'a') // use only "a" million
+		{
+			for(int temp = 0 ; temp < MAX_DATA_LEN ; temp++)
+				data[temp] = 'a';
+			data[MAX_DATA_LEN] = '\0';
+			datalen = MAX_DATA_LEN;
+			databitlen = datalen * 8;
+		}
+/*
 		printf("\n> Input Message Length in Bits: %d\n", databitlen);
 		printf("- Input Message:\n");
+
+		for (k = 0; k < datalen; k++) {
+			if (k != 0 && k % 71 == 0)
+				printf("\n");
+			printf("%c", data[k]);
+		}
+
+		printf("\n");
 
 		for (k = 0; k < datalen; k++) {
 			if (k != 0 && k % 32 == 0){
@@ -106,16 +121,7 @@ void lsh_test_type2(lsh_type algtype){
 			}
 		}
 
-		printf("\n");
-
-		for (k = 0; k < datalen; k++) {
-			if (k != 0 && k % 71 == 0){
-				printf("\n");
-			}
-			printf("%c", data[k]);
-		}
-
-		printf("\n\n");
+		printf("\n\n");*/
 
 		result = lsh_digest(algtype, data, databitlen, hash);
 		if (result != LSH_SUCCESS){
@@ -129,7 +135,6 @@ void lsh_test_type2(lsh_type algtype){
 			}
 
 			printf("%02x", hash[k]);
-
 			fprintf(output_file, "%02x", hash[k]);
 
 			if (k % 4 == 3){
@@ -148,7 +153,8 @@ void lsh_test_type2(lsh_type algtype){
 	return;
 }
 
-int main(){
+int main()
+{
 	FILE *input_file;
 	char file_name[MAX_FILE_NAME_LEN];
 	lsh_uint bits[2] = {256, 512};
@@ -181,7 +187,7 @@ int main(){
 			// call lsh function
 			if(algtype != NULL)
 			{
-			  algtype[strlen(algtype) - 1] = '\0';	// remove LF character
+				algtype[strlen(algtype) - 1] = '\0';	// remove LF character
 				if(!strcmp(algtype, "LSH-256_224"))
 					lsh_test_type2(LSH_TYPE_256_224);
 				else if(!strcmp(algtype, "LSH-256_256"))

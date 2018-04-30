@@ -31,6 +31,9 @@
 
 #pragma warning(disable: 4996)
 
+static lsh_u8 g_hmac_key_data[384];
+static lsh_u8 g_lsh_test_data[1024];
+
 void lsh_test_type2(lsh_type algtype){
 	FILE *input_file, *output_file;
 	char input_file_name[MAX_FILE_NAME_LEN], output_file_name[MAX_FILE_NAME_LEN];
@@ -153,8 +156,98 @@ void lsh_test_type2(lsh_type algtype){
 	return;
 }
 
+int hmac_lsh_test_type2(const char* path_prefix){
+	FILE* fp;
+	lsh_uint i;
+	lsh_uint hashbit, keylen_idx, msglen;
+	lsh_uint tmp;
+	lsh_type t_type;
+
+	int hmac256_keylen[] = { 0, 1, 8, 32, 64, 128, 256 };
+	int hmac512_keylen[] = { 0, 1, 8, 32, 64, 128, 256, 384 };
+	lsh_u8 hmac_result[LSH512_HASH_VAL_MAX_BYTE_LEN];
+	char outpath[256];
+
+	if (path_prefix == NULL || strlen(path_prefix) > 200){
+		return 1;
+	}
+
+	/* hmac key = {2k} + {2*(k-128)+1} + {2(k-256)} */
+	g_hmac_key_data[0] = 0;
+	for (i = 1; i < 384; i++){
+		tmp = g_hmac_key_data[i - 1] + 2;
+		if (tmp >= 0x100){
+			tmp ^= 0x101;
+		}
+		g_hmac_key_data[i] = tmp;
+	}
+
+	for (i = 0; i < 1024; i++) {
+		g_lsh_test_data[i] = (lsh_u8)i;
+	}
+
+	/* LSH256 */
+	for (hashbit = 1; hashbit <= 256; hashbit++){
+		t_type = LSH_MAKE_TYPE(0, hashbit);
+		for (keylen_idx = 0; keylen_idx < sizeof(hmac256_keylen) / sizeof(int); keylen_idx++){
+			sprintf(outpath, "hmac_out/%s%d_%d_%d.txt", path_prefix, 256, hashbit, hmac256_keylen[keylen_idx]);
+			fp = fopen(outpath, "wt");
+			if (fp == NULL){
+				continue;
+			}
+
+			for (msglen = 0; msglen < sizeof(g_lsh_test_data); msglen++){
+				hmac_lsh_digest(t_type, g_hmac_key_data, hmac256_keylen[keylen_idx], g_lsh_test_data, msglen, hmac_result);
+				fprintf(fp, "%d\n", msglen);
+				fout_hex(fp, hmac_result, LSH_GET_HASHBYTE(t_type));
+				fprintf(fp, "\n");
+			}
+			fclose(fp);
+		}
+	}
+
+	/* LSH512 */
+/*	for (hashbit = 1; hashbit <= 512; hashbit++){
+		t_type = LSH_MAKE_TYPE(1, hashbit);
+		for (keylen_idx = 0; keylen_idx < sizeof(hmac512_keylen) / sizeof(int); keylen_idx++){
+			sprintf(outpath, "%s%d_%d_%d.txt", path_prefix, 512, hashbit, hmac512_keylen[keylen_idx]);
+			fp = fopen(outpath, "wt");
+			if (fp == NULL){
+				continue;
+			}
+
+			for (msglen = 0; msglen < sizeof(g_lsh_test_data); msglen++){
+				hmac_lsh_digest(t_type, g_hmac_key_data, hmac512_keylen[keylen_idx], g_lsh_test_data, msglen, hmac_result);
+				fprintf(fp, "%d\n", msglen);
+				fout_hex(fp, hmac_result, LSH_GET_HASHBYTE(t_type));
+				fprintf(fp, "\n");
+			}
+			fclose(fp);
+		}
+	}*/
+
+	return 0;
+}
+
+void fout_hex(FILE* fp, const lsh_u8* data, const size_t datalen){
+	size_t i;
+
+	if (fp == NULL || data == NULL)
+		return;
+
+	for (i = 0; i < datalen; i++){
+		fprintf(fp, "%02x", (lsh_u8)data[i]);
+	}
+
+	if (i % 32 != 31)
+		fprintf(fp, "\n");
+}
+
 int main()
 {
+	hmac_lsh_test_type2("hmac_lsh_test_");
+
+	/**********************
 	FILE *input_file;
 	char file_name[MAX_FILE_NAME_LEN];
 	lsh_uint bits[2] = {256, 512};
@@ -207,6 +300,7 @@ int main()
 				printf("algorithm type reading failed \n");
 		}
 	}
+	**********************/
 
 	return 0;
 }

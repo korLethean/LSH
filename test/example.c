@@ -173,13 +173,6 @@ int hmac_lsh_test_type2(){
 	int *hmac256_keylen;
 	int *hmac512_keylen;
 
-	const char* path_prefix = "lsh_";
-
-
-	if (path_prefix == NULL || strlen(path_prefix) > 200){
-		return 1;
-	}
-
 	/* hmac key = {2k} + {2*(k-128)+1} + {2(k-256)} */
 /*	g_hmac_key_data[0] = 0;
 	for (i = 1; i < 384; i++){

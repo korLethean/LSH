@@ -26,7 +26,7 @@
 #include "../include/hmac.h"
 
 #define MAX_FILE_NAME_LEN 256
-#define MAX_READ_LEN 1024
+#define MAX_READ_LEN 2048
 #define MAX_DATA_LEN 1000000	// original 256 * 4
 
 #pragma warning(disable: 4996)
@@ -157,9 +157,9 @@ int hmac_lsh_test_type2(){
 	lsh_uint bits[2] = {256, 512};
 	lsh_uint hashbits[4] = {224, 256, 384, 512};
 
-	lsh_u8 p_keynum[10];
-	lsh_uint keynum;
-	lsh_uint hashbit, keylen_idx, keylen, msglen;
+	lsh_u8 p_keynum[10], p_msgnum[10];
+	lsh_uint keynum, msgnum;
+	lsh_uint hashbit, keylen, msglen;
 	lsh_type t_type;
 	int count;
 
@@ -168,9 +168,6 @@ int hmac_lsh_test_type2(){
 
 	lsh_u8 hmac_result[LSH512_HASH_VAL_MAX_BYTE_LEN];
 	char outpath[256];
-
-	int *hmac256_keylen;
-	int *hmac512_keylen;
 
 	/* hmac key = {2k} + {2*(k-128)+1} + {2(k-256)} */
 /*	g_hmac_key_data[0] = 0;
@@ -201,32 +198,52 @@ int hmac_lsh_test_type2(){
 			sprintf(output_file_name, "HMAC_test/HMAC_LSH-%d_%d_rsp.txt", bits[b], hashbits[h]);
 			input_file = fopen(input_file_name, "r");
 			output_file = fopen(output_file_name, "w");
-			fgets(g_lsh_test_data, MAX_READ_LEN, input_file);	// remove first line
-			fgets(g_lsh_test_data, MAX_READ_LEN, input_file);
-
-			g_lsh_test_data[strlen(g_lsh_test_data) - 1] = '\0';		// remove LF character
-
-			for(int temp = 10, index = 0; temp < strlen(g_lsh_test_data); temp++)
-				p_keynum[index++] = g_lsh_test_data[temp];
-			keynum = atoi(p_keynum);	//get number of lines
-
-
-			for(int temp = 0 ; temp < keynum ; temp++)
-			{
-				fgets(g_hmac_key_data[temp], MAX_READ_LEN, input_file);
-				g_hmac_key_data[temp][strlen(g_hmac_key_data[temp]) - 1] = '\0';		// remove LF character
-
-				printf("%s \n", g_hmac_key_data[temp]);
-			}
-
-
 			if(input_file == NULL)
 			{
 				printf("file does not exist");
 				return 0;
 			}
+
+			fgets(g_lsh_test_data, MAX_READ_LEN, input_file);	// remove first line
+			fgets(g_lsh_test_data, MAX_READ_LEN, input_file);
+
+			g_lsh_test_data[strlen(g_lsh_test_data) - 1] = '\0';	// remove LF character
+
+			for(int temp = 10, index = 0; temp < strlen(g_lsh_test_data); temp++)
+				p_keynum[index++] = g_lsh_test_data[temp];
+			keynum = atoi(p_keynum);	//get number of lines
+
+			for(int temp = 0 ; temp < keynum ; temp++)
+			{	// get key value
+				fgets(g_hmac_key_data[temp], MAX_READ_LEN, input_file);
+				g_hmac_key_data[temp][strlen(g_hmac_key_data[temp]) - 1] = '\0'; // remove LF character
+			}
+
+			fgets(g_lsh_test_data, MAX_READ_LEN, input_file);
+			g_lsh_test_data[strlen(g_lsh_test_data) - 1] = '\0';
+
+			for(int temp = 10, index = 0; temp < strlen(g_lsh_test_data); temp++)
+				p_msgnum[index++] = g_lsh_test_data[temp];
+			msgnum = atoi(p_msgnum);	//get number of lines
+
+			for(int key_index = 0 ; key_index < keynum ; key_index++)
+			{
+				FILE *reopen = fopen(input_file_name, "r");
+				for(int temp = 0 ; temp < keynum + 3 ; temp++)
+					fgets(g_lsh_test_data, MAX_READ_LEN, reopen); //skip lines
+
+				for(int temp = 0 ; temp < msgnum ; temp++)
+				{
+					fgets(g_lsh_test_data, MAX_READ_LEN, reopen);
+					g_lsh_test_data[strlen(g_lsh_test_data) - 1] = '\0';
+					keylen = strlen(g_hmac_key_data[key_index]);
+					msglen = strlen(g_lsh_test_data);
+					hmac_lsh_digest(t_type, g_hmac_key_data[key_index], keylen, g_lsh_test_data, msglen, hmac_result);
+				}
+				printf("//////////////////////// \n");
+				fclose(reopen);
+			}
 			printf("%s file opened \n", input_file_name);
-			free(g_hmac_key_data);
 		}
 	}
 

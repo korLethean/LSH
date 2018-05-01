@@ -160,7 +160,9 @@ int hmac_lsh_test_type2(){
 	lsh_uint hashbits[4] = {224, 256, 384, 512};
 
 	lsh_uint i;
-	lsh_uint hashbit, keylen_idx, msglen;
+	lsh_u8 p_keynum[10];
+	lsh_uint keynum;
+	lsh_uint hashbit, keylen_idx, keylen, msglen;
 	lsh_uint tmp;
 	lsh_type t_type;
 
@@ -199,7 +201,16 @@ int hmac_lsh_test_type2(){
 			sprintf(output_file_name, "HMAC_test/HMAC_LSH-%d_%d_rsp.txt", bits[b], hashbits[h]);
 			input_file = fopen(input_file_name, "r");
 			output_file = fopen(output_file_name, "w");
+			fgets(g_hmac_key_data, MAX_READ_LEN, input_file);	// remove first line
+			fgets(g_hmac_key_data, MAX_READ_LEN, input_file);
 
+			g_hmac_key_data[strlen(g_hmac_key_data) - 1] = '\0';		// remove LF character
+
+			for(int temp = 10, index = 0; temp < strlen(g_hmac_key_data); temp++)
+				p_keynum[index++] = g_hmac_key_data[temp];
+			keynum = atoi(p_keynum);	//get number of lines
+
+			printf("%d", keynum);
 			if(input_file == NULL)
 			{
 				printf("file does not exist");

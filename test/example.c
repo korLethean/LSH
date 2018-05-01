@@ -31,9 +31,6 @@
 
 #pragma warning(disable: 4996)
 
-static lsh_u8 g_hmac_key_data[384];
-static lsh_u8 g_lsh_test_data[1024];
-
 void lsh_test_type2(lsh_type algtype){
 	FILE *input_file, *output_file;
 	char input_file_name[MAX_FILE_NAME_LEN], output_file_name[MAX_FILE_NAME_LEN];
@@ -156,24 +153,35 @@ void lsh_test_type2(lsh_type algtype){
 	return;
 }
 
-int hmac_lsh_test_type2(const char* path_prefix){
-	FILE* fp;
+int hmac_lsh_test_type2(){
+	FILE *input_file, *output_file;
+	char input_file_name[MAX_FILE_NAME_LEN], output_file_name[MAX_FILE_NAME_LEN];
+	lsh_uint bits[2] = {256, 512};
+	lsh_uint hashbits[4] = {224, 256, 384, 512};
+
 	lsh_uint i;
 	lsh_uint hashbit, keylen_idx, msglen;
 	lsh_uint tmp;
 	lsh_type t_type;
 
-	int hmac256_keylen[] = { 0, 1, 8, 32, 64, 128, 256 };
-	int hmac512_keylen[] = { 0, 1, 8, 32, 64, 128, 256, 384 };
+	lsh_u8 g_hmac_key_data[384];
+	lsh_u8 g_lsh_test_data[MAX_DATA_LEN];
+
 	lsh_u8 hmac_result[LSH512_HASH_VAL_MAX_BYTE_LEN];
 	char outpath[256];
+
+	int *hmac256_keylen;
+	int *hmac512_keylen;
+
+	const char* path_prefix = "lsh_";
+
 
 	if (path_prefix == NULL || strlen(path_prefix) > 200){
 		return 1;
 	}
 
 	/* hmac key = {2k} + {2*(k-128)+1} + {2(k-256)} */
-	g_hmac_key_data[0] = 0;
+/*	g_hmac_key_data[0] = 0;
 	for (i = 1; i < 384; i++){
 		tmp = g_hmac_key_data[i - 1] + 2;
 		if (tmp >= 0x100){
@@ -184,27 +192,50 @@ int hmac_lsh_test_type2(const char* path_prefix){
 
 	for (i = 0; i < 1024; i++) {
 		g_lsh_test_data[i] = (lsh_u8)i;
-	}
+	}*/
 
 	/* LSH256 */
+	for(int b = 0 ; b < 2 ; b++)
+	{
+		for(int h = 0 ; h < 4 ; h++)
+		{
+			if(b < 1 && h > 1)
+				break;
+
+			sprintf(input_file_name, "HMAC_test/HMAC_LSH-%d_%d.txt", bits[b], hashbits[h]);
+			sprintf(output_file_name, "HMAC_test/HMAC_LSH-%d_%d_rsp.txt", bits[b], hashbits[h]);
+			input_file = fopen(input_file_name, "r");
+			output_file = fopen(output_file_name, "w");
+
+			if(input_file == NULL)
+			{
+				printf("file does not exist");
+				return 0;
+			}
+			printf("%s file opened \n", input_file_name);
+		}
+	}
+
+/*
 	for (hashbit = 1; hashbit <= 256; hashbit++){
 		t_type = LSH_MAKE_TYPE(0, hashbit);
 		for (keylen_idx = 0; keylen_idx < sizeof(hmac256_keylen) / sizeof(int); keylen_idx++){
 			sprintf(outpath, "hmac_out/%s%d_%d_%d.txt", path_prefix, 256, hashbit, hmac256_keylen[keylen_idx]);
-			fp = fopen(outpath, "wt");
-			if (fp == NULL){
+			output_file = fopen(outpath, "wt");
+			if (output_file == NULL){
 				continue;
 			}
 
 			for (msglen = 0; msglen < sizeof(g_lsh_test_data); msglen++){
 				hmac_lsh_digest(t_type, g_hmac_key_data, hmac256_keylen[keylen_idx], g_lsh_test_data, msglen, hmac_result);
-				fprintf(fp, "%d\n", msglen);
-				fout_hex(fp, hmac_result, LSH_GET_HASHBYTE(t_type));
-				fprintf(fp, "\n");
+				fprintf(output_file, "%d\n", msglen);
+				fout_hex(output_file, hmac_result, LSH_GET_HASHBYTE(t_type));
+				fprintf(output_file, "\n");
 			}
-			fclose(fp);
+			fclose(output_file);
+			fclose(input_file);
 		}
-	}
+	}*/
 
 	/* LSH512 */
 /*	for (hashbit = 1; hashbit <= 512; hashbit++){
@@ -245,7 +276,7 @@ void fout_hex(FILE* fp, const lsh_u8* data, const size_t datalen){
 
 int main()
 {
-	hmac_lsh_test_type2("hmac_lsh_test_");
+	hmac_lsh_test_type2();
 
 	/**********************
 	FILE *input_file;

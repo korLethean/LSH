@@ -242,6 +242,7 @@ int hmac_lsh_test_type2(){
 
 			for(int key_index = 0 ; key_index < keynum ; key_index++)
 			{
+				keylen = strlen(g_hmac_key_data[key_index]);
 				for(int itr = 0 ; itr < taglen ; itr++)
 				{
 					FILE *reopen = fopen(input_file_name, "r");
@@ -260,20 +261,17 @@ int hmac_lsh_test_type2(){
 						}
 						g_lsh_test_data[o] = '\0';	// add NULL character at the end of String
 
-						keylen = strlen(g_hmac_key_data[key_index]);
 						msglen = strlen(g_lsh_test_data);
 
 						if(msglen == 1 && g_lsh_test_data[0] == 'a') // use only "a" million
 						{
 							for(int data_index = 0 ; data_index < MAX_DATA_LEN ; data_index++)
-								g_lsh_test_data[temp] = 'a';
+								g_lsh_test_data[data_index] = 'a';
 							g_lsh_test_data[MAX_DATA_LEN] = '\0';
 							msglen = MAX_DATA_LEN;
 						}
 
 						hmac_lsh_digest(t_type, g_hmac_key_data[key_index], keylen, g_lsh_test_data, msglen, hmac_result);
-
-						printf("%d \n", keylen);
 
 						fprintf(output_file,"COUNT = %d \n", count++);
 						fprintf(output_file,"Klen = %d \n", keylen);
@@ -283,12 +281,9 @@ int hmac_lsh_test_type2(){
 						for (int hash_index = 0; hash_index < LSH_TAG_LENGTH[itr]; hash_index++){
 							fprintf(output_file, "%02x", (lsh_u8)hmac_result[hash_index]);
 						}
-						/*for (int hash_index = 0; hash_index < LSH_GET_HASHBYTE(t_type); hash_index++){
-								fprintf(output_file, "%02x", (lsh_u8)hmac_result[hash_index]);
-							}*/
 						fprintf(output_file, "\n\n");
 					}
-				fclose(reopen);
+					fclose(reopen);
 				}
 			}
 			printf("%s file opened \n", input_file_name);

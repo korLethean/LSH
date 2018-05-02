@@ -27,7 +27,7 @@
 
 #define MAX_FILE_NAME_LEN 256
 #define MAX_READ_LEN 3072
-#define MAX_DATA_LEN 1000000	// original 256 * 4
+#define MAX_DATA_LEN 1000001	// original 256 * 4
 
 #pragma warning(disable: 4996)
 
@@ -92,8 +92,8 @@ void lsh_test_type2(lsh_type algtype){
 		{
 			for(int temp = 0 ; temp < MAX_DATA_LEN ; temp++)
 				data[temp] = 'a';
-			data[MAX_DATA_LEN] = '\0';
-			datalen = MAX_DATA_LEN;
+			data[MAX_DATA_LEN - 1] = '\0';
+			datalen = strlen(data);
 			databitlen = datalen * 8;
 		}
 /****************** console output ******************
@@ -268,8 +268,9 @@ int hmac_lsh_test_type2(){
 							for(int data_index = 0 ; data_index < MAX_DATA_LEN ; data_index++)
 								g_lsh_test_data[data_index] = 'a';
 							g_lsh_test_data[MAX_DATA_LEN - 1] = '\0';
-							msglen = MAX_DATA_LEN;
+							msglen = strlen(g_lsh_test_data);
 						}
+						printf("amillionlen: %d \n", msglen);
 
 						hmac_lsh_digest(t_type, g_hmac_key_data[key_index], keylen, g_lsh_test_data, msglen, hmac_result);
 

@@ -267,7 +267,7 @@ int hmac_lsh_test_type2(){
 						{
 							for(int data_index = 0 ; data_index < MAX_DATA_LEN ; data_index++)
 								g_lsh_test_data[data_index] = 'a';
-							g_lsh_test_data[MAX_DATA_LEN] = '\0';
+							g_lsh_test_data[MAX_DATA_LEN - 1] = '\0';
 							msglen = MAX_DATA_LEN;
 						}
 

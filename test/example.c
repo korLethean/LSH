@@ -217,7 +217,7 @@ int hmac_lsh_test_type2(){
 				return 0;
 			}
 			else
-				fprintf(output_file, "Algo_ID = %s \n\n", algid);
+				fprintf(output_file, "Algo_ID = %s\n\n", algid);
 
 			fgets(g_lsh_test_data, MAX_READ_LEN, input_file);	// remove first line
 			fgets(g_lsh_test_data, MAX_READ_LEN, input_file);
@@ -273,10 +273,10 @@ int hmac_lsh_test_type2(){
 
 						hmac_lsh_digest(t_type, g_hmac_key_data[key_index], keylen, g_lsh_test_data, msglen, hmac_result);
 
-						fprintf(output_file,"COUNT = %d \n", count++);
-						fprintf(output_file,"Klen = %d \n", keylen);
-						fprintf(output_file,"Tlen = %d \n", LSH_TAG_LENGTH[itr]);
-						fprintf(output_file,"Key = %s \n", g_hmac_key_data[key_index]);
+						fprintf(output_file,"COUNT = %d\n", count++);
+						fprintf(output_file,"Klen = %d\n", keylen);
+						fprintf(output_file,"Tlen = %d\n", LSH_TAG_LENGTH[itr]);
+						fprintf(output_file,"Key = %s\n", g_hmac_key_data[key_index]);
 						fprintf(output_file,"Msg = ");
 						for (int hash_index = 0; hash_index < LSH_TAG_LENGTH[itr]; hash_index++){
 							fprintf(output_file, "%02x", (lsh_u8)hmac_result[hash_index]);

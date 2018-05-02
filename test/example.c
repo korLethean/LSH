@@ -161,6 +161,7 @@ int hmac_lsh_test_type2(){
 	const lsh_uint LSH_256_TAGS[3] = {16, 24, 32};
 	const lsh_uint LSH_384_TAGS[4] = {24, 32, 40, 48};
 	const lsh_uint LSH_512_TAGS[5] = {32, 40, 48, 56, 64};
+	lsh_uint *LSH_TAG_LENGTH, taglen;
 
 	lsh_u8 p_keynum[10], p_msgnum[10];
 	lsh_uint keynum, msgnum;
@@ -184,6 +185,27 @@ int hmac_lsh_test_type2(){
 
 			t_type = LSH_MAKE_TYPE(b, hashbits[h]); // b == 0 -> 256 | b == 1 -> 512
 
+			if(h == 0)
+			{
+				taglen = 5;
+				LSH_TAG_LENGTH = LSH_224_TAGS;
+			}
+			else if(h == 1)
+			{
+				taglen = 3;
+				LSH_TAG_LENGTH = LSH_256_TAGS;
+			}
+			else if(h == 2)
+			{
+				taglen = 4;
+				LSH_TAG_LENGTH = LSH_384_TAGS;
+			}
+			else if(h == 3)
+			{
+				taglen = 5;
+				LSH_TAG_LENGTH = LSH_512_TAGS;
+			}
+
 			sprintf(input_file_name, "HMAC_test/HMAC_LSH-%d_%d.txt", bits[b], hashbits[h]);
 			sprintf(output_file_name, "HMAC_test/HMAC_LSH-%d_%d_rsp.txt", bits[b], hashbits[h]);
 			sprintf(algid, "HMAC_LSH-%d_%d", bits[b], hashbits[h]);
@@ -194,6 +216,8 @@ int hmac_lsh_test_type2(){
 				printf("file does not exist");
 				return 0;
 			}
+			else
+				fprintf(output_file, "Algo_ID = %s \n\n", algid);
 
 			fgets(g_lsh_test_data, MAX_READ_LEN, input_file);	// remove first line
 			fgets(g_lsh_test_data, MAX_READ_LEN, input_file);
@@ -201,7 +225,7 @@ int hmac_lsh_test_type2(){
 
 			for(int temp = 10, index = 0; temp < strlen(g_lsh_test_data); temp++)
 				p_keynum[index++] = g_lsh_test_data[temp];
-			keynum = atoi(p_keynum);	//get number of lines
+			keynum = atoi(p_keynum);	//get number of keys
 
 			for(int temp = 0 ; temp < keynum ; temp++)
 			{	// get key value
@@ -214,51 +238,58 @@ int hmac_lsh_test_type2(){
 
 			for(int temp = 10, index = 0; temp < strlen(g_lsh_test_data); temp++)
 				p_msgnum[index++] = g_lsh_test_data[temp];
-			msgnum = atoi(p_msgnum);	//get number of lines
+			msgnum = atoi(p_msgnum);	//get number of messages
 
 			for(int key_index = 0 ; key_index < keynum ; key_index++)
 			{
-				FILE *reopen = fopen(input_file_name, "r");
-				for(int temp = 0 ; temp < keynum + 3 ; temp++)
-					fgets(g_lsh_test_data, MAX_READ_LEN, reopen); //skip lines
-				fprintf(output_file, "Algo_ID = %s \n\n", algid);
-
-				for(int temp = 0 ; temp < msgnum ; temp++)
+				for(int itr = 0 ; itr < taglen ; itr++)
 				{
-					fgets(g_lsh_test_data, MAX_READ_LEN, reopen);
-					g_lsh_test_data[strlen(g_lsh_test_data) - 1] = '\0';
+					FILE *reopen = fopen(input_file_name, "r");
+					for(int temp = 0 ; temp < keynum + 3 ; temp++)
+						fgets(g_lsh_test_data, MAX_READ_LEN, reopen); //skip lines
 
-					for(i = 0, o = 0 ; i < strlen(g_lsh_test_data) ; i++)
-					{	// remove " character
-						if(g_lsh_test_data[i] != '\"')
-							g_lsh_test_data[o++] = g_lsh_test_data[i];
-					}
-					g_lsh_test_data[o] = '\0';	// add NULL character at the end of String
-
-					keylen = strlen(g_hmac_key_data[key_index]);
-					msglen = strlen(g_lsh_test_data);
-
-					if(msglen == 1 && g_lsh_test_data[0] == 'a') // use only "a" million
+					for(int temp = 0 ; temp < msgnum ; temp++)
 					{
-						for(int data_index = 0 ; data_index < MAX_DATA_LEN ; data_index++)
-							g_lsh_test_data[temp] = 'a';
-						g_lsh_test_data[MAX_DATA_LEN] = '\0';
-						msglen = MAX_DATA_LEN;
-					}
+						fgets(g_lsh_test_data, MAX_READ_LEN, reopen);
+						g_lsh_test_data[strlen(g_lsh_test_data) - 1] = '\0';
 
-					hmac_lsh_digest(t_type, g_hmac_key_data[key_index], keylen, g_lsh_test_data, msglen, hmac_result);
+						for(i = 0, o = 0 ; i < strlen(g_lsh_test_data) ; i++)
+						{	// remove " character
+							if(g_lsh_test_data[i] != '\"')
+								g_lsh_test_data[o++] = g_lsh_test_data[i];
+						}
+						g_lsh_test_data[o] = '\0';	// add NULL character at the end of String
 
-					fprintf(output_file,"COUNT = %d \n", count++);
-					fprintf(output_file,"Klen = %d \n", keylen);
-					fprintf(output_file,"Tlen = %d \n", msglen);
-					fprintf(output_file,"Key = %s \n", g_hmac_key_data[key_index]);
-					fprintf(output_file,"Msg = ");
-					for (int hash_index = 0; hash_index < LSH_GET_HASHBYTE(t_type); hash_index++){
+						keylen = strlen(g_hmac_key_data[key_index]);
+						msglen = strlen(g_lsh_test_data);
+
+						if(msglen == 1 && g_lsh_test_data[0] == 'a') // use only "a" million
+						{
+							for(int data_index = 0 ; data_index < MAX_DATA_LEN ; data_index++)
+								g_lsh_test_data[temp] = 'a';
+							g_lsh_test_data[MAX_DATA_LEN] = '\0';
+							msglen = MAX_DATA_LEN;
+						}
+
+						hmac_lsh_digest(t_type, g_hmac_key_data[key_index], keylen, g_lsh_test_data, msglen, hmac_result);
+
+						printf("%d \n", keylen);
+
+						fprintf(output_file,"COUNT = %d \n", count++);
+						fprintf(output_file,"Klen = %d \n", keylen);
+						fprintf(output_file,"Tlen = %d \n", LSH_TAG_LENGTH[itr]);
+						fprintf(output_file,"Key = %s \n", g_hmac_key_data[key_index]);
+						fprintf(output_file,"Msg = ");
+						for (int hash_index = 0; hash_index < LSH_TAG_LENGTH[itr]; hash_index++){
 							fprintf(output_file, "%02x", (lsh_u8)hmac_result[hash_index]);
 						}
-					fprintf(output_file, "\n\n");
-				}
+						/*for (int hash_index = 0; hash_index < LSH_GET_HASHBYTE(t_type); hash_index++){
+								fprintf(output_file, "%02x", (lsh_u8)hmac_result[hash_index]);
+							}*/
+						fprintf(output_file, "\n\n");
+					}
 				fclose(reopen);
+				}
 			}
 			printf("%s file opened \n", input_file_name);
 		}

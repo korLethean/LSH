@@ -155,8 +155,12 @@ int hmac_lsh_test_type2(){
 	FILE *input_file, *output_file;
 	char input_file_name[MAX_FILE_NAME_LEN], output_file_name[MAX_FILE_NAME_LEN];
 	char algid[MAX_FILE_NAME_LEN];
-	lsh_uint bits[2] = {256, 512};
-	lsh_uint hashbits[4] = {224, 256, 384, 512};
+	const lsh_uint bits[2] = {256, 512};
+	const lsh_uint hashbits[4] = {224, 256, 384, 512};
+	const lsh_uint LSH_224_TAGS[5] = {14, 16, 20, 24, 28};
+	const lsh_uint LSH_256_TAGS[3] = {16, 24, 32};
+	const lsh_uint LSH_384_TAGS[4] = {24, 32, 40, 48};
+	const lsh_uint LSH_512_TAGS[5] = {32, 40, 48, 56, 64};
 
 	lsh_u8 p_keynum[10], p_msgnum[10];
 	lsh_uint keynum, msgnum;
@@ -247,9 +251,12 @@ int hmac_lsh_test_type2(){
 					fprintf(output_file,"COUNT = %d \n", count++);
 					fprintf(output_file,"Klen = %d \n", keylen);
 					fprintf(output_file,"Tlen = %d \n", msglen);
-					fprintf(output_file,"Key = ? \n");
+					fprintf(output_file,"Key = %s \n", g_hmac_key_data[key_index]);
 					fprintf(output_file,"Msg = ");
-					fout_hex(output_file, hmac_result, LSH_GET_HASHBYTE(t_type));
+					for (int hash_index = 0; hash_index < LSH_GET_HASHBYTE(t_type); hash_index++){
+							fprintf(output_file, "%02x", (lsh_u8)hmac_result[hash_index]);
+						}
+					fprintf(output_file, "\n\n");
 				}
 				fclose(reopen);
 			}
@@ -260,19 +267,6 @@ int hmac_lsh_test_type2(){
 	fclose(input_file);
 	fclose(output_file);
 	return 0;
-}
-
-void fout_hex(FILE* fp, const lsh_u8* data, const size_t datalen){
-	size_t i;
-
-	if (fp == NULL || data == NULL)
-		return;
-
-	for (i = 0; i < datalen; i++){
-		fprintf(fp, "%02x", (lsh_u8)data[i]);
-	}
-
-	fprintf(fp, "\n\n");
 }
 
 int main()

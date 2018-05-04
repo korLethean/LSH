@@ -383,18 +383,19 @@ void hmac_lsh_testvector(FILE *input_file, FILE *output_file, char *input_file_n
 				}
 				msglen = strlen(g_lsh_test_data) / 2;	// calculate msg length
 
+				hmac_lsh_digest(t_type, g_hmac_key_data, keylen, g_lsh_test_data, msglen, hmac_result);
 
-				/*hmac_lsh_digest(t_type, g_hmac_key_data, keylen, g_lsh_test_data, msglen, hmac_result);
 				fprintf(output_file,"COUNT = %d\n", count++);
 				fprintf(output_file,"Klen = %d\n", keylen);
 				fprintf(output_file,"Tlen = %d\n", taglen);
 				fprintf(output_file,"Key = %s\n", g_hmac_key_data);
-				fprintf(output_file,"Msg = ");
 				fprintf(output_file,"Msg = %s\n", g_lsh_test_data);
 				fprintf(output_file,"Mac = ");
 				for (int hash_index = 0; hash_index < taglen; hash_index++){
 					fprintf(output_file, "%02x", (lsh_u8)hmac_result[hash_index]);
-				}*/
+				}
+				fprintf(output_file,"\n\n");
+
 				fgets(g_lsh_test_data, MAX_READ_LEN, input_file);	// skip blank line
 			}
 			printf("%s file opened \n", input_file_name);
@@ -420,7 +421,7 @@ int hmac_lsh_test_type2(){
 
 int main()
 {
-	//lsh_test_drive();
+	lsh_test_drive();
 	hmac_lsh_test_type2();
 
 	return 0;

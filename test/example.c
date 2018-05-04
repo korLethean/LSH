@@ -209,14 +209,16 @@ void lsh_test_type2(lsh_type algtype){
 void hmac_lsh_reference(FILE *input_file, FILE *output_file, char *input_file_name, char *output_file_name, char *algid, const lsh_uint *bits, const lsh_uint *hashbits) {
 	lsh_u8 p_keynum[10], p_msgnum[10];
 	lsh_uint keynum, msgnum;
-	lsh_uint keylen, msglen;
+	lsh_uint keylen, msglen, key_vlen;
 	lsh_type t_type;
 	int i, o;
 
 	lsh_u8 g_hmac_key_data[10][2048];
+	lsh_u8 g_hmac_key_value[1024];
 	lsh_u8 g_lsh_test_data[MAX_DATA_LEN];
 
 	lsh_u8 hmac_result[LSH512_HASH_VAL_MAX_BYTE_LEN];
+
 	for(int b = 0 ; b < 2 ; b++)
 	{
 		for(int h = 0 ; h < 4 ; h++)
@@ -231,10 +233,11 @@ void hmac_lsh_reference(FILE *input_file, FILE *output_file, char *input_file_na
 			sprintf(algid, "HMAC_LSH-%d_%d", bits[b], hashbits[h]);
 			input_file = fopen(input_file_name, "r");
 			output_file = fopen(output_file_name, "w");
+
 			if(input_file == NULL)
 			{
 				printf("file does not exist \n");
-				return ;
+				continue ;
 			}
 			else
 				fprintf(output_file, "Algo_ID = %s\n\n", algid);
@@ -263,13 +266,24 @@ void hmac_lsh_reference(FILE *input_file, FILE *output_file, char *input_file_na
 			for(int key_index = 0 ; key_index < keynum ; key_index++)
 			{
 				keylen = strlen(g_hmac_key_data[key_index]);
-				fprintf(output_file,"Key = %s\n", g_hmac_key_data[key_index]);
+				key_vlen = keylen / 2;
+
+				for(int r = 0, w = 0 ; r < keylen ; r += 2)
+				{
+					lsh_u8 temp_arr[3] = {g_hmac_key_data[key_index][r], g_hmac_key_data[key_index][r+1], '\0'};
+					g_hmac_key_value[w++] = strtol(temp_arr, NULL, 16);
+				}
+				fprintf(output_file, "Key = ");
+
+				for(int kvindex = 0 ; kvindex < key_vlen ; kvindex++)
+					fprintf(output_file, "%02x", g_hmac_key_value[kvindex]);
+				fprintf(output_file, "\n");
 
 				rewind(input_file);
 				for(int skip = 0 ; skip < keynum + 3 ; skip++)
 					fgets(g_lsh_test_data, MAX_READ_LEN, input_file); //skip lines
 
-				for(int temp = 0 ; temp < msgnum ; temp++)
+				for(int msg_index = 0 ; msg_index < msgnum ; msg_index++)
 				{
 					fgets(g_lsh_test_data, MAX_READ_LEN, input_file);
 					g_lsh_test_data[strlen(g_lsh_test_data) - 1] = '\0';
@@ -291,7 +305,7 @@ void hmac_lsh_reference(FILE *input_file, FILE *output_file, char *input_file_na
 						msglen = strlen(g_lsh_test_data);
 					}
 
-					hmac_lsh_digest(t_type, g_hmac_key_data[key_index], keylen, g_lsh_test_data, msglen, hmac_result);
+					hmac_lsh_digest(t_type, g_hmac_key_value, keylen, g_lsh_test_data, msglen, hmac_result);
 
 					for (int hash_index = 0; hash_index < LSH_GET_HASHBYTE(t_type); hash_index++){
 						fprintf(output_file, "%02x", (lsh_u8)hmac_result[hash_index]);
@@ -303,7 +317,6 @@ void hmac_lsh_reference(FILE *input_file, FILE *output_file, char *input_file_na
 			printf("%s file opened \n", input_file_name);
 		}
 	}
-
 	fclose(input_file);
 	fclose(output_file);
 }
@@ -421,7 +434,7 @@ int hmac_lsh_test_type2(){
 
 int main()
 {
-	lsh_test_drive();
+	//lsh_test_drive();
 	hmac_lsh_test_type2();
 
 	return 0;

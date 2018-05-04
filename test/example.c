@@ -31,6 +31,61 @@
 
 #pragma warning(disable: 4996)
 
+void lsh_test_drive() {
+	FILE *input_file;
+	char file_name[MAX_FILE_NAME_LEN];
+	lsh_uint bits[2] = {256, 512};
+	lsh_uint hashbits[4] = {224, 256, 384, 512};
+	char *algtype = NULL;
+	char str_alg[MAX_READ_LEN];
+
+	for(int b = 0 ; b < 2 ; b++)
+	{
+		for(int h = 0 ; h < 4 ; h++)
+		{
+			if(b < 1 && h > 1)
+				break;
+			sprintf(file_name, "Hash_test/LSH-%d_%d.txt", bits[b], hashbits[h]);
+			input_file = fopen(file_name, "r");
+
+			if(input_file != NULL)
+			{
+				fgets(str_alg, MAX_READ_LEN, input_file);
+				algtype = strstr(str_alg, "LSH");		// get LSH algorithm type
+			}
+			else
+			{
+				printf("file does not exist");
+				return ;
+			}
+
+			fclose(input_file);
+
+			// call lsh function
+			if(algtype != NULL)
+			{
+				algtype[strlen(algtype) - 1] = '\0';	// remove LF character
+				if(!strcmp(algtype, "LSH-256_224"))
+					lsh_test_type2(LSH_TYPE_256_224);
+				else if(!strcmp(algtype, "LSH-256_256"))
+					lsh_test_type2(LSH_TYPE_256_256);
+				else if(!strcmp(algtype, "LSH-512_224"))
+					lsh_test_type2(LSH_TYPE_512_224);
+				else if(!strcmp(algtype, "LSH-512_256"))
+					lsh_test_type2(LSH_TYPE_512_256);
+				else if(!strcmp(algtype, "LSH-512_384"))
+					lsh_test_type2(LSH_TYPE_512_384);
+				else if(!strcmp(algtype, "LSH-512_512"))
+					lsh_test_type2(LSH_TYPE_512_512);
+				else	// LSH type typo
+					printf("unknown LSH type: %s \n", algtype);
+			}
+			else		// excluding other algorithm or typo
+				printf("algorithm type reading failed \n");
+		}
+	}
+}
+
 void lsh_test_type2(lsh_type algtype){
 	FILE *input_file, *output_file;
 	char input_file_name[MAX_FILE_NAME_LEN], output_file_name[MAX_FILE_NAME_LEN];
@@ -151,7 +206,7 @@ void lsh_test_type2(lsh_type algtype){
 	return;
 }
 
-int hmac_lsh_test_type2(){
+void hmac_lsh_reference() {
 	FILE *input_file, *output_file;
 	char input_file_name[MAX_FILE_NAME_LEN], output_file_name[MAX_FILE_NAME_LEN];
 	char algid[MAX_FILE_NAME_LEN];
@@ -174,7 +229,6 @@ int hmac_lsh_test_type2(){
 	lsh_u8 g_lsh_test_data[MAX_DATA_LEN];
 
 	lsh_u8 hmac_result[LSH512_HASH_VAL_MAX_BYTE_LEN];
-
 	for(int b = 0 ; b < 2 ; b++)
 	{
 		for(int h = 0 ; h < 4 ; h++)
@@ -206,15 +260,15 @@ int hmac_lsh_test_type2(){
 				LSH_TAG_LENGTH = LSH_512_TAGS;
 			}
 
-			sprintf(input_file_name, "HMAC_test/HMAC_LSH-%d_%d.txt", bits[b], hashbits[h]);
-			sprintf(output_file_name, "HMAC_test/HMAC_LSH-%d_%d_rsp.txt", bits[b], hashbits[h]);
+			sprintf(input_file_name, "HMAC_test/reference/HMAC_LSH-%d_%d.txt", bits[b], hashbits[h]);
+			sprintf(output_file_name, "HMAC_test/reference/HMAC_LSH-%d_%d_rsp.txt", bits[b], hashbits[h]);
 			sprintf(algid, "HMAC_LSH-%d_%d", bits[b], hashbits[h]);
 			input_file = fopen(input_file_name, "r");
 			output_file = fopen(output_file_name, "w");
 			if(input_file == NULL)
 			{
-				printf("file does not exist");
-				return 0;
+				printf("file does not exist \n");
+				return ;
 			}
 			else
 				fprintf(output_file, "Algo_ID = %s\n\n", algid);
@@ -270,7 +324,6 @@ int hmac_lsh_test_type2(){
 							g_lsh_test_data[MAX_DATA_LEN - 1] = '\0';
 							msglen = strlen(g_lsh_test_data);
 						}
-						printf("amillionlen: %d \n", msglen);
 
 						hmac_lsh_digest(t_type, g_hmac_key_data[key_index], keylen, g_lsh_test_data, msglen, hmac_result);
 
@@ -278,7 +331,8 @@ int hmac_lsh_test_type2(){
 						fprintf(output_file,"Klen = %d\n", keylen);
 						fprintf(output_file,"Tlen = %d\n", LSH_TAG_LENGTH[itr]);
 						fprintf(output_file,"Key = %s\n", g_hmac_key_data[key_index]);
-						fprintf(output_file,"Msg = ");
+						fprintf(output_file,"Msg = %s\n", g_lsh_test_data);
+						fprintf(output_file,"Mac = ");
 						for (int hash_index = 0; hash_index < LSH_TAG_LENGTH[itr]; hash_index++){
 							fprintf(output_file, "%02x", (lsh_u8)hmac_result[hash_index]);
 						}
@@ -293,67 +347,18 @@ int hmac_lsh_test_type2(){
 
 	fclose(input_file);
 	fclose(output_file);
+}
+
+int hmac_lsh_test_type2(){
+	hmac_lsh_reference();
+
 	return 0;
 }
 
 int main()
 {
-	hmac_lsh_test_type2("hmac_lsh_test_");
-
-	/**********************
-	FILE *input_file;
-	char file_name[MAX_FILE_NAME_LEN];
-	lsh_uint bits[2] = {256, 512};
-	lsh_uint hashbits[4] = {224, 256, 384, 512};
-	char *algtype = NULL;
-	char str_alg[MAX_READ_LEN];
-
-	for(int b = 0 ; b < 2 ; b++)
-	{
-		for(int h = 0 ; h < 4 ; h++)
-		{
-			if(b < 1 && h > 1)
-				break;
-			sprintf(file_name, "Hash_test/LSH-%d_%d.txt", bits[b], hashbits[h]);
-			input_file = fopen(file_name, "r");
-
-			if(input_file != NULL)
-			{
-				fgets(str_alg, MAX_READ_LEN, input_file);
-				algtype = strstr(str_alg, "LSH");		// get LSH algorithm type
-			}
-			else
-			{
-				printf("file does not exist");
-				return 0;
-			}
-
-			fclose(input_file);
-
-			// call lsh function
-			if(algtype != NULL)
-			{
-				algtype[strlen(algtype) - 1] = '\0';	// remove LF character
-				if(!strcmp(algtype, "LSH-256_224"))
-					lsh_test_type2(LSH_TYPE_256_224);
-				else if(!strcmp(algtype, "LSH-256_256"))
-					lsh_test_type2(LSH_TYPE_256_256);
-				else if(!strcmp(algtype, "LSH-512_224"))
-					lsh_test_type2(LSH_TYPE_512_224);
-				else if(!strcmp(algtype, "LSH-512_256"))
-					lsh_test_type2(LSH_TYPE_512_256);
-				else if(!strcmp(algtype, "LSH-512_384"))
-					lsh_test_type2(LSH_TYPE_512_384);
-				else if(!strcmp(algtype, "LSH-512_512"))
-					lsh_test_type2(LSH_TYPE_512_512);
-				else	// LSH type typo
-					printf("unknown LSH type: %s \n", algtype);
-			}
-			else		// excluding other algorithm or typo
-				printf("algorithm type reading failed \n");
-		}
-	}
-	**********************/
+	//lsh_test_drive();
+	hmac_lsh_test_type2();
 
 	return 0;
 }

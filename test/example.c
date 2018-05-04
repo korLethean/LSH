@@ -305,7 +305,7 @@ void hmac_lsh_reference(FILE *input_file, FILE *output_file, char *input_file_na
 						msglen = strlen(g_lsh_test_data);
 					}
 
-					hmac_lsh_digest(t_type, g_hmac_key_value, keylen, g_lsh_test_data, msglen, hmac_result);
+					hmac_lsh_digest(t_type, g_hmac_key_value, key_vlen, g_lsh_test_data, msglen, hmac_result);
 
 					for (int hash_index = 0; hash_index < LSH_GET_HASHBYTE(t_type); hash_index++){
 						fprintf(output_file, "%02x", (lsh_u8)hmac_result[hash_index]);

@@ -308,6 +308,47 @@ void hmac_lsh_reference(FILE *input_file, FILE *output_file, char *input_file_na
 	fclose(output_file);
 }
 
+void hmac_lsh_testvector(FILE *input_file, FILE *output_file, char *input_file_name, char *output_file_name, char *algid, const lsh_uint *bits, const lsh_uint *hashbits) {
+	lsh_u8 p_taglen[10];
+	lsh_uint keylen, taglen, msglen11;
+	lsh_type t_type;
+
+	lsh_u8 g_hmac_key_data[10][2048];
+	lsh_u8 g_lsh_test_data[MAX_DATA_LEN];
+
+	lsh_u8 hmac_result[LSH512_HASH_VAL_MAX_BYTE_LEN];
+
+	for(int b = 0 ; b < 2 ; b++)
+	{
+		for(int h = 0 ; h < 4 ; h++)
+		{
+			if(b < 1 && h > 1)
+				break;
+
+			t_type = LSH_MAKE_TYPE(b, hashbits[h]); // b == 0 -> 256 | b == 1 -> 512
+
+			sprintf(input_file_name, "HMAC_test/testvector/HMAC_LSH-%d_%d.txt", bits[b], hashbits[h]);
+			sprintf(output_file_name, "HMAC_test/testvector/HMAC_LSH-%d_%d_rsp.txt", bits[b], hashbits[h]);
+			sprintf(algid, "HMAC_LSH-%d_%d", bits[b], hashbits[h]);
+			input_file = fopen(input_file_name, "r");
+			output_file = fopen(output_file_name, "w");
+			if(input_file == NULL)
+			{
+				printf("file does not exist \n");
+				return ;
+			}
+			else
+				fprintf(output_file, "Algo_ID = %s\n\n", algid);
+
+
+			printf("%s file opened \n", input_file_name);
+
+			fclose(input_file);
+			fclose(output_file);
+		}
+	}
+}
+
 int hmac_lsh_test_type2(){
 	FILE *input_file, *output_file;
 	char input_file_name[MAX_FILE_NAME_LEN], output_file_name[MAX_FILE_NAME_LEN];
@@ -316,7 +357,7 @@ int hmac_lsh_test_type2(){
 	const lsh_uint hashbits[4] = {224, 256, 384, 512};
 
 	hmac_lsh_reference(input_file, output_file, input_file_name, output_file_name, algid, bits, hashbits);
-
+	hmac_lsh_testvector(input_file, output_file, input_file_name, output_file_name, algid, bits, hashbits);
 
 	return 0;
 }

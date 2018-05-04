@@ -407,11 +407,11 @@ void hmac_lsh_testvector(FILE *input_file, FILE *output_file, char *input_file_n
 				for(int r = 0, w = 0 ; r < msglen ; r += 2)
 				{
 					lsh_u8 temp_arr[3] = {g_lsh_test_data[r], g_lsh_test_data[r+1], '\0'};
-					g_lsh_test_data[w++] = strtol(temp_arr, NULL, 16);
+					g_lsh_test_value[w++] = strtol(temp_arr, NULL, 16);
 				}
 				msg_vlen = msglen / 2;
 
-				hmac_lsh_digest(t_type, g_hmac_key_value, key_vlen, g_lsh_test_data, msg_vlen, hmac_result);
+				hmac_lsh_digest(t_type, g_hmac_key_value, key_vlen, g_lsh_test_value, msg_vlen, hmac_result);
 
 				fprintf(output_file,"COUNT = %d\n", count++);
 				fprintf(output_file,"Klen = %d\n", key_vlen);
@@ -422,7 +422,7 @@ void hmac_lsh_testvector(FILE *input_file, FILE *output_file, char *input_file_n
 				fprintf(output_file, "\n");
 				fprintf(output_file,"Msg = ");
 				for(int mvindex = 0 ; mvindex < msg_vlen ; mvindex++)
-					fprintf(output_file,"%02x", g_lsh_test_data[mvindex]);
+					fprintf(output_file,"%02x", g_lsh_test_value[mvindex]);
 				fprintf(output_file, "\n");
 				fprintf(output_file,"Mac = ");
 				for (int hash_index = 0; hash_index < taglen; hash_index++){

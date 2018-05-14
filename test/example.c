@@ -401,10 +401,6 @@ void hmac_lsh_testvector(FILE *input_file, FILE *output_file, char *input_file_n
 				}
 				msg_vlen = msglen / 2;
 
-				for(int mvindex = 0 ; mvindex < msg_vlen ; mvindex++)
-					printf("%02x", g_lsh_test_value[mvindex]);
-				printf("\n");
-
 				hmac_lsh_digest(t_type, g_hmac_key_value, key_vlen, g_lsh_test_value, msg_vlen, hmac_result);
 
 				fprintf(output_file,"COUNT = %d\n", count++);

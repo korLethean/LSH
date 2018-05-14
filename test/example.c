@@ -335,6 +335,7 @@ void hmac_lsh_testvector(FILE *input_file, FILE *output_file, char *input_file_n
 	lsh_u8 hmac_result[LSH512_HASH_VAL_MAX_BYTE_LEN];
 
 	int count;
+	int key_index, msg_index, value_index;
 
 	for(int b = 0 ; b < 2 ; b++)
 	{
@@ -374,16 +375,10 @@ void hmac_lsh_testvector(FILE *input_file, FILE *output_file, char *input_file_n
 				taglen = atoi(p_taglen);	//get tag length
 
 				fgets(g_lsh_test_data, MAX_READ_LEN, input_file);	// read key line
-				for(int temp = 6, index = 0; temp < strlen(g_lsh_test_data); temp++)
-				{
-					if(g_lsh_test_data[temp] == 0x0A)
-					{
-						g_hmac_key_data[index] = '\0';
-						break;
-					}
-					else
-						g_hmac_key_data[index++] = g_lsh_test_data[temp];
-				}
+
+				for(key_index = 6, value_index = 0; key_index < strlen(g_lsh_test_data)-1; key_index++)
+					g_hmac_key_data[value_index++] = g_lsh_test_data[key_index];
+				g_hmac_key_data[value_index] = '\0';
 				keylen = strlen(g_hmac_key_data);	// calculate key length
 				for(int r = 0, w = 0 ; r < keylen ; r += 2)
 				{
@@ -393,23 +388,22 @@ void hmac_lsh_testvector(FILE *input_file, FILE *output_file, char *input_file_n
 				key_vlen = keylen / 2;
 
 				fgets(g_lsh_test_data, MAX_READ_LEN, input_file);	// read msg line
-				for(int temp = 6, index = 0; temp < strlen(g_lsh_test_data); temp++)
-				{
-					if(g_lsh_test_data[temp] == 0x0A)
-					{
-						g_lsh_test_data[index] = '\0';
-						break;
-					}
-					else
-						g_lsh_test_data[index++] = g_lsh_test_data[temp];
-				}
+
+				for(msg_index = 6, value_index = 0; msg_index < strlen(g_lsh_test_data)-1; msg_index++)
+					g_lsh_test_data[value_index++] = g_lsh_test_data[msg_index];
+				g_lsh_test_data[value_index] = '\0';
 				msglen = strlen(g_lsh_test_data);	// calculate msg length
+
 				for(int r = 0, w = 0 ; r < msglen ; r += 2)
 				{
 					lsh_u8 temp_arr[3] = {g_lsh_test_data[r], g_lsh_test_data[r+1], '\0'};
 					g_lsh_test_value[w++] = strtol(temp_arr, NULL, 16);
 				}
 				msg_vlen = msglen / 2;
+
+				for(int mvindex = 0 ; mvindex < msg_vlen ; mvindex++)
+					printf("%02x", g_lsh_test_value[mvindex]);
+				printf("\n");
 
 				hmac_lsh_digest(t_type, g_hmac_key_value, key_vlen, g_lsh_test_value, msg_vlen, hmac_result);
 
@@ -447,7 +441,7 @@ int hmac_lsh_test_type2(){
 	const lsh_uint bits[2] = {256, 512};
 	const lsh_uint hashbits[4] = {224, 256, 384, 512};
 
-	hmac_lsh_reference(input_file, output_file, input_file_name, output_file_name, algid, bits, hashbits);
+	//hmac_lsh_reference(input_file, output_file, input_file_name, output_file_name, algid, bits, hashbits);
 	hmac_lsh_testvector(input_file, output_file, input_file_name, output_file_name, algid, bits, hashbits);
 
 	return 0;

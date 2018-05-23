@@ -32,7 +32,8 @@ struct DRBG_Administrative {
 struct DRBG_LSH_Context {
 	union LSH_Context drbg_ctx;
 	struct DRBG_Administrative setting;
-	lsh_u8 working_state_V[55];
+	lsh_u8 working_state_V[56];
+	lsh_u8 working_state_C[56];
 };
 
 

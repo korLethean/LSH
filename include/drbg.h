@@ -32,8 +32,7 @@ struct DRBG_Administrative {
 struct DRBG_LSH_Context {
 	union LSH_Context drbg_ctx;
 	struct DRBG_Administrative setting;
-	lsh_uint working_state;
-	lsh_u8 V[111];
+	lsh_u8 working_state_V[55];
 };
 
 
@@ -73,7 +72,7 @@ lsh_err drbg_lsh_inner_reseed(struct DRBG_LSH_Context *ctx, const lsh_u8 *state,
  *
  * @return LSH_SUCCESS 내부 상태 초기화 성공
  */
-lsh_err drbg_lsh_inner_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *state);
+lsh_err drbg_lsh_inner_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype);
 
 
 /**

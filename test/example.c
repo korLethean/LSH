@@ -24,6 +24,7 @@
 #include <string.h>
 #include "../include/lsh.h"
 #include "../include/hmac.h"
+#include "../include/drbg.h"
 
 #define MAX_FILE_NAME_LEN 256
 #define MAX_READ_LEN 3072
@@ -437,7 +438,7 @@ int hmac_lsh_test_type2(){
 	const lsh_uint bits[2] = {256, 512};
 	const lsh_uint hashbits[4] = {224, 256, 384, 512};
 
-	//hmac_lsh_reference(input_file, output_file, input_file_name, output_file_name, algid, bits, hashbits);
+	hmac_lsh_reference(input_file, output_file, input_file_name, output_file_name, algid, bits, hashbits);
 	hmac_lsh_testvector(input_file, output_file, input_file_name, output_file_name, algid, bits, hashbits);
 
 	return 0;
@@ -446,7 +447,12 @@ int hmac_lsh_test_type2(){
 int main()
 {
 	//lsh_test_drive();
-	hmac_lsh_test_type2();
+	//hmac_lsh_test_type2();
+
+	lsh_type algtype = LSH_TYPE_256_224;
+	lsh_u8 data[6] = "616263";
+
+	drbg_lsh_digest(algtype, data);
 
 	return 0;
 }

@@ -1,25 +1,3 @@
-/*
- * Copyright (c) 2016 NSR (National Security Research Institute)
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy 
- * of this software and associated documentation files (the "Software"), to deal 
- * in the Software without restriction, including without limitation the rights 
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
- * copies of the Software, and to permit persons to whom the Software is 
- * furnished to do so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in 
- * all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN 
- * THE SOFTWARE.
- */
-
 #ifndef _REF_HMAC_H_
 #define _REF_HMAC_H_
 
@@ -47,6 +25,7 @@ struct DRBG_Administrative {
 	lsh_uint usingaddinput;
 };
 
+
 /**
  * DRBG 계산을 위한 내부 상태 구조체
  */
@@ -54,6 +33,7 @@ struct DRBG_LSH_Context {
 	union LSH_Context drbg_ctx;
 	struct DRBG_Administrative setting;
 	lsh_uint working_state;
+	lsh_u8 V[111];
 };
 
 
@@ -146,7 +126,7 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *add_inpu
  *
  * @return LSH_SUCCESS 내부 상태 초기화 성공
  */
-lsh_err hmac_lsh_digest(lsh_type algtype, const lsh_u8* key, size_t keybytelen, const lsh_u8* data, size_t databytelen, lsh_u8* digest);
+lsh_err drbg_lsh_digest(lsh_type algtype, lsh_u8 *data);
 
 #ifdef __cplusplus
 }

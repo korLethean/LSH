@@ -2,7 +2,7 @@
 #include <math.h>
 #include "../include/drbg.h"
 
-lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_u8 *data)
+lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_u8 *data, lsh_u8 *output)
 {
 	lsh_err result;
 
@@ -42,6 +42,7 @@ lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, lsh_type algtype, con
 		if(!i) {
 			for(int j = 0 ; j < strlen(N) ; j++)
 				hash_data[1 + j] = N[j];
+
 			for(r = 0; r < strlen(data) ; r += 2)
 			{
 				lsh_u8 temp_arr[3] = {data[r], data[r+1], '\0'};
@@ -63,7 +64,7 @@ lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, lsh_type algtype, con
 			i = 0;
 		}
 
-		ctx->working_state_V[w++] = hash_result[flag][i];
+		output[w++] = hash_result[flag][i];
 	}
 
 	return result;
@@ -118,14 +119,48 @@ lsh_err drbg_lsh_inner_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype
 }
 
 
+lsh_err drbg_lsh_init(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_u8 *entropy, const lsh_u8 *nonce, const lsh_u8 *per_string)
+{
+	lsh_err result;
+
+	lsh_u8 input[1024];
+
+	int r, w, arr_size;
+
+	arr_size = sizeof(entropy) / sizeof(lsh_u8);
+	for(r = 0, w = 0 ; r < arr_size ; r++)
+		input[w++] = entropy[r];
+
+	arr_size = sizeof(nonce) / sizeof(lsh_u8);
+	for(r = 0 ; r < arr_size ; r++)
+		input[w++] = nonce[r];
+
+	arr_size = sizeof(per_string) / sizeof(lsh_u8);
+	for(r = 0 ; r < arr_size ; r++)
+		input[w++] = per_string[r];
+
+	result = drbg_derivation_func(ctx, algtype, input, ctx->working_state_V);
+	if (result != LSH_SUCCESS)
+		return result;
+
+
+	input[0] = 0x00;
+	arr_size = sizeof(ctx->working_state_C) / sizeof(lsh_u8);
+	for(r = 0, w = 1 ; r < arr_size ; r++)
+		input[w++] = ctx->working_state_C[r];
+
+	result = drbg_derivation_func(ctx, algtype, input, ctx->working_state_C);
+
+	return result;
+}
+
+
+
 lsh_err drbg_lsh_digest(lsh_type algtype, lsh_u8 *data)
 {
 	struct DRBG_LSH_Context ctx;
 	int result;
 
-	result = drbg_derivation_func(&ctx, algtype, data);
-	if (result != LSH_SUCCESS)
-		return result;
 
 	result = drbg_lsh_inner_output_gen(&ctx, algtype);
 	if (result != LSH_SUCCESS)

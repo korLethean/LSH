@@ -73,11 +73,6 @@ lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, lsh_type algtype, con
 
 			hash_data[w] = '\0';
 		}
-		for(int t = 0 ; t < strlen(hash_data) ; t++)
-		{
-			printf("%02x", hash_data[t]);
-		}
-		printf("     *** %d ***\n", i);
 
 		result = lsh_digest(algtype, hash_data, strlen(hash_data) * 8, hash_result[i]);
 	}
@@ -93,6 +88,7 @@ lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, lsh_type algtype, con
 		}
 
 		output[w++] = hash_result[flag][i];
+		output[w] = '\0';
 	}
 
 	return result;
@@ -109,7 +105,7 @@ lsh_err drbg_lsh_inner_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype
 	lsh_uint *hash_data;
 	lsh_u8 hash_result[3][LSH512_HASH_VAL_MAX_BYTE_LEN];
 
-	int r, w = 0, counter = 1;
+	int r, w = 0, counter = 0;
 	int flag = 0;
 	int output_index = 55;
 
@@ -125,10 +121,10 @@ lsh_err drbg_lsh_inner_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype
 	for(int i = 0 ; i < n ; i++)
 	{
 		operation_add(ctx->working_state_V, i);
-		r = LSH_GET_HASHBIT(algtype) - 1;
+		r = LSH_GET_HASHBYTE(algtype) - 1;
 		w = r;
 
-		while(counter < LSH_GET_HASHBIT(algtype))
+		while(counter < LSH_GET_HASHBYTE(algtype))
 		{
 			hash_data[w--] = ctx->working_state_V[r--];
 			counter++;
@@ -178,7 +174,7 @@ lsh_err drbg_lsh_init(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_
 		return result;
 
 	input[0] = 0x00;
-	arr_size = sizeof(ctx->working_state_V) / sizeof(lsh_u8);
+	arr_size = strlen(ctx->working_state_V);
 	for(r = 0, w = 1 ; r < arr_size ; r++)
 		input[w++] = ctx->working_state_V[r];
 	input[w] = '\0';

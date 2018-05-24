@@ -106,7 +106,7 @@ lsh_err drbg_lsh_inner_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype
 
 	int r, w = 0, counter = 0;
 	int flag = 0;
-	int output_index = 55;
+	int output_index = STATE_MAX_SIZE;
 
 	if (ctx == NULL)
 		return LSH_ERR_NULL_PTR;
@@ -216,46 +216,43 @@ lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, lsh_type algtype, const ls
 	return result;
 }
 
-
-lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_u8 *add_input)
+lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_u8 *add_input, int add_size)
 {
 	lsh_err result;
 
 	lsh_u8 hash_data[1024] = {'\0', };
+	int hash_data_size;
 	lsh_u8 hash_result[LSH512_HASH_VAL_MAX_BYTE_LEN];
 
 	int r, w, arr_size;
 
 	hash_data[0] = 0x02;
-	arr_size = strlen(ctx->working_state_V);
-	for(r = 0 , w = 1 ; r < arr_size ; r++)
+	for(r = 0 , w = 1 ; r < STATE_MAX_SIZE ; r++)
 		hash_data[w++] = ctx->working_state_V[r];
 
-	arr_size = strlen(add_input);
-	for(r = 0 ; r < arr_size ; r++)
+	for(r = 0 ; r < add_size ; r++)
 		hash_data[w++] = add_input[r];
-	hash_data[w] = '\0';
+	hash_data_size = STATE_MAX_SIZE + add_size;
 
-	result = lsh_digest(algtype, hash_data, strlen(hash_data) * 8, hash_result);
+	result = lsh_digest(algtype, hash_data, hash_data_size * 8, hash_result);
 	if (result != LSH_SUCCESS)
 		return result;
 
-	arr_size = strlen(hash_result);
-	for(int i = 0 ; i < hash_result ; i++)
-		ctx->working_state_V[i] = hash_result[i];
+	for(int i = 0 ; i < LSH512_HASH_VAL_MAX_BYTE_LEN ; i++)
+		//// add operation C, V ///
 
 	hash_data[0] = 0x03;
-	arr_size = strlen(ctx->working_state_V);
-	for(r = 0, w = 1 ; r < arr_size ; r++)
+	for(r = 0, w = 1 ; r < STATE_MAX_SIZE ; r++)
 		hash_data[w++] = ctx->working_state_V[r];
-	hash_data[w] = '\0';
+	hash_data_size = STATE_MAX_SIZE + 1;
 
-	result = lsh_digest(algtype, hash_data, strlen(hash_data) * 8, hash_result);
+	result = lsh_digest(algtype, hash_data, hash_data_size * 8, hash_result);
 	if (result != LSH_SUCCESS)
 		return result;
 
-	// **** **** //
+	/// add operation with C, V, reseed_counter ///
 
+	/// call inner output gen func ///
 
 	return result;
 }
@@ -271,6 +268,10 @@ lsh_err drbg_lsh_digest(lsh_type algtype, lsh_u8 *entropy, int ent_size, lsh_u8 
 		return result;
 
 	result = drbg_lsh_reseed(&ctx, algtype, entropy, ent_size, add_input, add_size);
+	if (result != LSH_SUCCESS)
+		return result;
+
+	result = drbg_lsh_output_gen(&ctx, algtype, add_input, add_size);
 	if (result != LSH_SUCCESS)
 		return result;
 

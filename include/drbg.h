@@ -66,19 +66,6 @@ lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, lsh_type algtype, const ls
 
 
 /**
- * DRBG 내부 출력 생성 함수
- *
- * @param [in] ctx DRBG 내부 상태 구조체
- * @param [in] state 작동상태
- * @param [out] output 출력
- * @param [out] state 작동상태
- *
- * @return LSH_SUCCESS 내부 상태 초기화 성공
- */
-lsh_err drbg_lsh_inner_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype);
-
-
-/**
  * DRBG 초기화 함수
  *
  * @param [in] ctx DRBG 내부 상태 구조체
@@ -113,7 +100,7 @@ lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, lsh_type algtype, const ls
  *
  * @return LSH_SUCCESS 내부 상태 초기화 성공
  */
-lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_u8 *add_input);
+lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_u8 *add_input, int add_size);
 
 
 /**

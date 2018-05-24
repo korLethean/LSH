@@ -111,7 +111,7 @@ lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, lsh_type algtype, const ls
  *
  * @return LSH_SUCCESS 내부 상태 초기화 성공
  */
-lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *add_input, const lsh_u8 *state);
+lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_u8 *add_input);
 
 
 /**
@@ -126,7 +126,7 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *add_inpu
  *
  * @return LSH_SUCCESS 내부 상태 초기화 성공
  */
-lsh_err drbg_lsh_digest(lsh_type algtype, lsh_u8 *data);
+lsh_err drbg_lsh_digest(lsh_type algtype, lsh_u8 *entropy, lsh_u8 *nonce, lsh_u8 *per_string, lsh_u8 *add_input);
 
 #ifdef __cplusplus
 }

@@ -195,14 +195,62 @@ lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, lsh_type algtype, const ls
 }
 
 
+lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_u8 *add_input)
+{
+	lsh_err result;
 
-lsh_err drbg_lsh_digest(lsh_type algtype, lsh_u8 *data)
+	lsh_u8 hash_data[1024] = {'\0', };
+	lsh_u8 hash_result[LSH512_HASH_VAL_MAX_BYTE_LEN];
+
+	int r, w, arr_size;
+
+	hash_data[0] = 0x02;
+	arr_size = strlen(ctx->working_state_V);
+	for(r = 0 , w = 1 ; r < arr_size ; r++)
+		hash_data[w++] = ctx->working_state_V[r];
+
+	arr_size = strlen(add_input);
+	for(r = 0 ; r < arr_size ; r++)
+		hash_data[w++] = add_input[r];
+	hash_data[w] = '\0';
+
+	result = lsh_digest(algtype, hash_data, strlen(hash_data) * 8, hash_result);
+	if (result != LSH_SUCCESS)
+		return result;
+
+	arr_size = strlen(hash_result);
+	for(int i = 0 ; i < hash_result ; i++)
+		ctx->working_state_V[i] = hash_result[i];
+
+	hash_data[0] = 0x03;
+	arr_size = strlen(ctx->working_state_V);
+	for(r = 0, w = 1 ; r < arr_size ; r++)
+		hash_data[w++] = ctx->working_state_V[r];
+	hash_data[w] = '\0';
+
+	result = lsh_digest(algtype, hash_data, strlen(hash_data) * 8, hash_result);
+	if (result != LSH_SUCCESS)
+		return result;
+
+	// **** **** //
+
+
+
+
+	return result;
+}
+
+
+lsh_err drbg_lsh_digest(lsh_type algtype, lsh_u8 *entropy, lsh_u8 *nonce, lsh_u8 *per_string, lsh_u8 *add_input)
 {
 	struct DRBG_LSH_Context ctx;
 	int result;
 
+	result = drbg_lsh_init(&ctx, algtype, entropy, nonce, per_string);
+	if (result != LSH_SUCCESS)
+		return result;
 
-	result = drbg_lsh_inner_output_gen(&ctx, algtype);
+	result = drbg_lsh_reseed(&ctx, algtype, entropy, add_input);
 	if (result != LSH_SUCCESS)
 		return result;
 

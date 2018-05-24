@@ -450,9 +450,13 @@ int main()
 	//hmac_lsh_test_type2();
 
 	lsh_type algtype = LSH_TYPE_256_224;
-	lsh_u8 data[6] = "616263";
+	lsh_u8 entropy[4] = {0xFF, 0x11, 0xBB, 0x33};
+	lsh_u8 nonce[1] = {0xCC};
+	lsh_u8 per_string[2] = {0x12, 0x34};
+	lsh_u8 add_input[3] = {0xEE, 0xFF, 0xDD};
+	lsh_u8 drbg_result[LSH512_HASH_VAL_MAX_BYTE_LEN];
 
-	drbg_lsh_digest(algtype, data);
+	drbg_lsh_digest(algtype, entropy, sizeof(entropy), nonce, sizeof(nonce), per_string, sizeof(per_string), add_input, sizeof(add_input), drbg_result);
 
 	return 0;
 }

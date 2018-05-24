@@ -99,7 +99,7 @@ lsh_err drbg_lsh_init(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_
  *
  * @return LSH_SUCCESS 내부 상태 초기화 성공
  */
-lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy, const lsh_u8 *add_input, const lsh_u8 *state);
+lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_u8 *entropy, const lsh_u8 *add_input);
 
 
 /**

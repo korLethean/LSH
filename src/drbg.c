@@ -138,16 +138,56 @@ lsh_err drbg_lsh_init(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_
 	arr_size = sizeof(per_string) / sizeof(lsh_u8);
 	for(r = 0 ; r < arr_size ; r++)
 		input[w++] = per_string[r];
+	input[w] = '\0';
 
 	result = drbg_derivation_func(ctx, algtype, input, ctx->working_state_V);
 	if (result != LSH_SUCCESS)
 		return result;
 
+	input[0] = 0x00;
+	arr_size = sizeof(ctx->working_state_V) / sizeof(lsh_u8);
+	for(r = 0, w = 1 ; r < arr_size ; r++)
+		input[w++] = ctx->working_state_V[r];
+	input[w] = '\0';
+
+	result = drbg_derivation_func(ctx, algtype, input, ctx->working_state_C);
+
+	return result;
+}
+
+
+lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_u8 *entropy, const lsh_u8 *add_input)
+{
+	lsh_err result;
+
+	lsh_u8 input[1024];
+
+	int r, w, arr_size;
+
+	input[0] = 0x01;
+
+	arr_size = sizeof(ctx->working_state_V) / sizeof(lsh_u8);
+	for(r = 0, w = 1 ; r < arr_size ; r++)
+		input[w++] = ctx->working_state_V[r];
+
+	arr_size = sizeof(entropy) / sizeof(lsh_u8);
+	for(r = 0 ; r < arr_size ; r++)
+		input[w++] = entropy[r];
+
+	arr_size = sizeof(add_input) / sizeof(lsh_u8);
+	for(r = 0 ; r < arr_size ; r++)
+		input[w++] = add_input[r];
+	input[w] = '\0';
+
+	result = drbg_derivation_func(ctx, algtype, input, ctx->working_state_V);
+	if (result != LSH_SUCCESS)
+		return result;
 
 	input[0] = 0x00;
-	arr_size = sizeof(ctx->working_state_C) / sizeof(lsh_u8);
+	arr_size = sizeof(ctx->working_state_V) / sizeof(lsh_u8);
 	for(r = 0, w = 1 ; r < arr_size ; r++)
-		input[w++] = ctx->working_state_C[r];
+		input[w++] = ctx->working_state_V[r];
+	input[w] = '\0';
 
 	result = drbg_derivation_func(ctx, algtype, input, ctx->working_state_C);
 

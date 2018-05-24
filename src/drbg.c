@@ -106,7 +106,7 @@ lsh_err drbg_lsh_inner_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype
 	lsh_uint *hash_data;
 	lsh_u8 hash_result[3][LSH512_HASH_VAL_MAX_BYTE_LEN];
 
-	int r, w = 0;
+	int r, w = 0, counter = 1;
 	int flag = 0;
 	int output_index = 55;
 
@@ -119,26 +119,32 @@ lsh_err drbg_lsh_inner_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype
 		Block_Bit = LSH512_HASH_VAL_MAX_BYTE_LEN * 8;
 	n = 2;
 
-	hash_data = ctx->working_state_V;
-
 	for(int i = 0 ; i < n ; i++)
 	{
-		//********** need V + 1 mod 2^blockbits **********//
+		operation_add(ctx->working_state_V, i);
+		r = LSH_GET_HASHBIT(algtype) - 1;
+		w = r;
+
+		while(counter > LSH_GET_HASHBIT(algtype))
+		{
+			hash_data[w--] = ctx->working_state_V[r--];
+			counter++;
+		}
 
 		result = lsh_digest(algtype, hash_data, strlen(hash_data) * 8, hash_result[i]);
 	}
 
 	w = 0;
-	for(int i = 0 ; i < output_index ; i++)
+	for(r = 0 ; r < output_index ; r++)
 	{
-		if(i == LSH_GET_HASHBYTE(algtype))
+		if(r == LSH_GET_HASHBYTE(algtype))
 		{
 			flag += 1;
 			output_index -= LSH_GET_HASHBYTE(algtype);
-			i = 0;
+			r = 0;
 		}
 
-		ctx->working_state_C[w++] = hash_result[flag][i];
+		ctx->working_state_C[w++] = hash_result[flag][r];
 	}
 }
 
@@ -272,9 +278,9 @@ lsh_err drbg_lsh_digest(lsh_type algtype, lsh_u8 *entropy, lsh_u8 *nonce, lsh_u8
 	if (result != LSH_SUCCESS)
 		return result;
 
-	result = drbg_lsh_reseed(&ctx, algtype, entropy, add_input);
+	/*result = drbg_lsh_reseed(&ctx, algtype, entropy, add_input);
 	if (result != LSH_SUCCESS)
-		return result;
+		return result;*/
 
 	return result;
 }

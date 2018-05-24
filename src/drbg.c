@@ -2,6 +2,31 @@
 #include <math.h>
 #include "../include/drbg.h"
 
+void operation_add(unsigned char *arr, int num)
+{
+	int arr_size = strlen(arr);
+	int temp;
+	int carry = 0;
+
+    temp = arr[arr_size - 1];
+    arr[arr_size - 1] += num;
+
+    if(arr[arr_size - 1] < temp)
+    {
+        carry += 1;
+        for(int i = arr_size - 2 ; i > -1 ; i--)
+        {
+            temp = arr[i];
+            arr[i] += carry;
+            carry = 0;
+            if(arr[i] < temp)
+                carry += 1;
+            else
+                break;
+        }
+    }
+}
+
 lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_u8 *data, lsh_u8 *output)
 {
 	lsh_err result;
@@ -78,8 +103,7 @@ lsh_err drbg_lsh_inner_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype
 	lsh_uint Block_Bit;
 	lsh_uint n;
 
-	lsh_uint *temp;
-	lsh_uint hash_data;
+	lsh_uint *hash_data;
 	lsh_u8 hash_result[3][LSH512_HASH_VAL_MAX_BYTE_LEN];
 
 	int r, w = 0;
@@ -95,13 +119,13 @@ lsh_err drbg_lsh_inner_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype
 		Block_Bit = LSH512_HASH_VAL_MAX_BYTE_LEN * 8;
 	n = 2;
 
-	temp = ctx->working_state_V;
+	hash_data = ctx->working_state_V;
 
 	for(int i = 0 ; i < n ; i++)
 	{
 		//********** need V + 1 mod 2^blockbits **********//
 
-		result = lsh_digest(algtype, temp, strlen(temp) * 8, hash_result[i]);
+		result = lsh_digest(algtype, hash_data, strlen(hash_data) * 8, hash_result[i]);
 	}
 
 	w = 0;
@@ -233,8 +257,6 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 		return result;
 
 	// **** **** //
-
-
 
 
 	return result;

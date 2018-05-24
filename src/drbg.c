@@ -62,19 +62,22 @@ lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, lsh_type algtype, con
 
 	for(int i = 0 ; i < len_seed ; i++)
 	{
-		hash_data[0] = 49 + i;
+		hash_data[0] = 49 + i;	//0x00 + i
 
 		if(!i) {
 			for(int j = 0 ; j < strlen(N) ; j++)
 				hash_data[1 + j] = N[j];
 
-			for(r = 0; r < strlen(data) ; r += 2)
-			{
-				lsh_u8 temp_arr[3] = {data[r], data[r+1], '\0'};
-				hash_data[w++] = strtol(temp_arr, NULL, 16);
-			}
+			for(r = 0; r < strlen(data) ; r++)
+				hash_data[w++] = data[r];
+
 			hash_data[w] = '\0';
 		}
+		for(int t = 0 ; t < strlen(hash_data) ; t++)
+		{
+			printf("%02x", hash_data[t]);
+		}
+		printf("     *** %d ***\n", i);
 
 		result = lsh_digest(algtype, hash_data, strlen(hash_data) * 8, hash_result[i]);
 	}
@@ -125,7 +128,7 @@ lsh_err drbg_lsh_inner_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype
 		r = LSH_GET_HASHBIT(algtype) - 1;
 		w = r;
 
-		while(counter > LSH_GET_HASHBIT(algtype))
+		while(counter < LSH_GET_HASHBIT(algtype))
 		{
 			hash_data[w--] = ctx->working_state_V[r--];
 			counter++;
@@ -157,15 +160,15 @@ lsh_err drbg_lsh_init(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_
 
 	int r, w, arr_size;
 
-	arr_size = sizeof(entropy) / sizeof(lsh_u8);
+	arr_size = strlen(entropy);
 	for(r = 0, w = 0 ; r < arr_size ; r++)
 		input[w++] = entropy[r];
 
-	arr_size = sizeof(nonce) / sizeof(lsh_u8);
+	arr_size = strlen(nonce);
 	for(r = 0 ; r < arr_size ; r++)
 		input[w++] = nonce[r];
 
-	arr_size = sizeof(per_string) / sizeof(lsh_u8);
+	arr_size = strlen(per_string);
 	for(r = 0 ; r < arr_size ; r++)
 		input[w++] = per_string[r];
 	input[w] = '\0';

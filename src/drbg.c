@@ -1,5 +1,4 @@
 #include <string.h>
-#include <math.h>
 #include "../include/drbg.h"
 
 void operation_add(unsigned char *arr, int num)
@@ -27,7 +26,7 @@ void operation_add(unsigned char *arr, int num)
     }
 }
 
-lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_u8 *data, lsh_u8 *output)
+lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_u8 *data, int data_size, lsh_u8 *output)
 {
 	lsh_err result;
 
@@ -68,13 +67,13 @@ lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, lsh_type algtype, con
 			for(int j = 0 ; j < strlen(N) ; j++)
 				hash_data[1 + j] = N[j];
 
-			for(r = 0; r < strlen(data) ; r++)
+			for(r = 0; r < data_size ; r++)
 				hash_data[w++] = data[r];
 
 			hash_data[w] = '\0';
 		}
 
-		result = lsh_digest(algtype, hash_data, strlen(hash_data) * 8, hash_result[i]);
+		result = lsh_digest(algtype, hash_data, data_size * 8, hash_result[i]);
 	}
 
 	w = 0;
@@ -148,77 +147,71 @@ lsh_err drbg_lsh_inner_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype
 }
 
 
-lsh_err drbg_lsh_init(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_u8 *entropy, const lsh_u8 *nonce, const lsh_u8 *per_string)
+lsh_err drbg_lsh_init(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_u8 *entropy, int ent_size, const lsh_u8 *nonce, int non_size, const lsh_u8 *per_string, int per_size)
 {
 	lsh_err result;
 
-	lsh_u8 input[1024];
+	lsh_u8 input[1024] = {'\0', };
 
-	int r, w, arr_size;
+	int r, w, input_size;
 
-	arr_size = strlen(entropy);
-	for(r = 0, w = 0 ; r < arr_size ; r++)
+	for(r = 0, w = 0 ; r < ent_size ; r++)
 		input[w++] = entropy[r];
 
-	arr_size = strlen(nonce);
-	for(r = 0 ; r < arr_size ; r++)
+	for(r = 0 ; r < non_size ; r++)
 		input[w++] = nonce[r];
 
-	arr_size = strlen(per_string);
-	for(r = 0 ; r < arr_size ; r++)
+	for(r = 0 ; r < per_size ; r++)
 		input[w++] = per_string[r];
 	input[w] = '\0';
+	input_size = ent_size + non_size + per_size;
 
-	result = drbg_derivation_func(ctx, algtype, input, ctx->working_state_V);
+	result = drbg_derivation_func(ctx, algtype, input, input_size, ctx->working_state_V);
 	if (result != LSH_SUCCESS)
 		return result;
+	memset(input, 0x00, 1024);
 
 	input[0] = 0x00;
-	arr_size = strlen(ctx->working_state_V);
-	for(r = 0, w = 1 ; r < arr_size ; r++)
+	for(r = 0, w = 1 ; r < STATE_MAX_SIZE ; r++)
 		input[w++] = ctx->working_state_V[r];
-	input[w] = '\0';
 
-	result = drbg_derivation_func(ctx, algtype, input, ctx->working_state_C);
+	result = drbg_derivation_func(ctx, algtype, input, STATE_MAX_SIZE + 1, ctx->working_state_C);
 
 	return result;
 }
 
 
-lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_u8 *entropy, const lsh_u8 *add_input)
+lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_u8 *entropy, int ent_size, const lsh_u8 *add_input, int add_size)
 {
 	lsh_err result;
 
-	lsh_u8 input[1024];
+	lsh_u8 input[1024] = {'\0' ,};
 
-	int r, w, arr_size;
+	int r, w, input_size;
 
 	input[0] = 0x01;
-
-	arr_size = sizeof(ctx->working_state_V) / sizeof(lsh_u8);
-	for(r = 0, w = 1 ; r < arr_size ; r++)
+	for(r = 0, w = 1 ; r < STATE_MAX_SIZE ; r++)
 		input[w++] = ctx->working_state_V[r];
 
-	arr_size = sizeof(entropy) / sizeof(lsh_u8);
-	for(r = 0 ; r < arr_size ; r++)
+	for(r = 0 ; r < ent_size ; r++)
 		input[w++] = entropy[r];
 
-	arr_size = sizeof(add_input) / sizeof(lsh_u8);
-	for(r = 0 ; r < arr_size ; r++)
+	for(r = 0 ; r < add_size ; r++)
 		input[w++] = add_input[r];
-	input[w] = '\0';
+	input_size = STATE_MAX_SIZE + ent_size + add_size;
 
-	result = drbg_derivation_func(ctx, algtype, input, ctx->working_state_V);
+	result = drbg_derivation_func(ctx, algtype, input, input_size, ctx->working_state_V);
 	if (result != LSH_SUCCESS)
 		return result;
+	memset(input, 0x00, 1024);
 
 	input[0] = 0x00;
-	arr_size = sizeof(ctx->working_state_V) / sizeof(lsh_u8);
-	for(r = 0, w = 1 ; r < arr_size ; r++)
+	for(r = 0, w = 1 ; r < STATE_MAX_SIZE ; r++)
 		input[w++] = ctx->working_state_V[r];
-	input[w] = '\0';
 
-	result = drbg_derivation_func(ctx, algtype, input, ctx->working_state_C);
+	result = drbg_derivation_func(ctx, algtype, input, STATE_MAX_SIZE + 1, ctx->working_state_C);
+	if (result != LSH_SUCCESS)
+		return result;
 
 	return result;
 }
@@ -268,18 +261,18 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 }
 
 
-lsh_err drbg_lsh_digest(lsh_type algtype, lsh_u8 *entropy, lsh_u8 *nonce, lsh_u8 *per_string, lsh_u8 *add_input)
+lsh_err drbg_lsh_digest(lsh_type algtype, lsh_u8 *entropy, int ent_size, lsh_u8 *nonce, int non_size, lsh_u8 *per_string, int per_size, lsh_u8 *add_input, int add_size)
 {
 	struct DRBG_LSH_Context ctx;
 	int result;
 
-	result = drbg_lsh_init(&ctx, algtype, entropy, nonce, per_string);
+	result = drbg_lsh_init(&ctx, algtype, entropy, ent_size, nonce, non_size, per_string, per_size);
 	if (result != LSH_SUCCESS)
 		return result;
 
-	/*result = drbg_lsh_reseed(&ctx, algtype, entropy, add_input);
+	result = drbg_lsh_reseed(&ctx, algtype, entropy, ent_size, add_input, add_size);
 	if (result != LSH_SUCCESS)
-		return result;*/
+		return result;
 
 	return result;
 }

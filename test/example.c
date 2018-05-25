@@ -444,19 +444,122 @@ int hmac_lsh_test_type2(){
 	return 0;
 }
 
+void drbg_lsh_test_drive()
+{
+	FILE *input_file, *output_file;
+	char input_file_name[MAX_FILE_NAME_LEN], output_file_name[MAX_FILE_NAME_LEN];
+	lsh_u8 read_line[MAX_DATA_LEN];
+
+	lsh_u8 drbg_result[LSH512_HASH_VAL_MAX_BYTE_LEN];
+
+	lsh_type algtype;
+	lsh_u8 entropy[3][64];
+	lsh_u8 nonce[32];
+	lsh_u8 per_string[64];
+	lsh_u8 add_input[2][64];
+	lsh_uint output_bits = 512;
+	lsh_uint reseed_cycle = 1;
+
+	int entropy_size	= 32;
+	int nonce_size		= 16;
+	int per_size		= 32;
+	int add_size		= 32;
+
+	sprintf(input_file_name, "DRBG_test/Hash_DRBG_LSH-256-256(no PR).txt");
+	input_file = fopen(input_file_name, "r");
+
+	sprintf(output_file_name, "DRBG_test/Hash_DRBG_LSH-256-256(no PR)_rsp.txt");
+	output_file = fopen(output_file_name, "w");
+
+	algtype = LSH_TYPE_256_256;
+
+	if(input_file != NULL)
+	{
+		fgets(read_line, MAX_READ_LEN, input_file);	// remove first line
+		fgets(read_line, MAX_READ_LEN, input_file);	// remove second line
+		fgets(read_line, MAX_READ_LEN, input_file);	// read entropy1
+		for(int r = 11, w = 0 ; r < entropy_size * 2 + 10; r += 2)
+		{
+			lsh_u8 str_to_hex[3] = {read_line[r], read_line[r+1], '\0'};
+			entropy[0][w++] = strtol(str_to_hex, NULL, 16);
+		}
+
+		fgets(read_line, MAX_READ_LEN, input_file);	// read entropy2
+		for(int r = 11, w = 0 ; r < entropy_size * 2 + 10; r += 2)
+		{
+			lsh_u8 str_to_hex[3] = {read_line[r], read_line[r+1], '\0'};
+			entropy[1][w++] = strtol(str_to_hex, NULL, 16);
+		}
+
+		fgets(read_line, MAX_READ_LEN, input_file);	// read entropy3
+		for(int r = 11, w = 0 ; r < entropy_size * 2 + 10; r += 2)
+		{
+			lsh_u8 str_to_hex[3] = {read_line[r], read_line[r+1], '\0'};
+			entropy[2][w++] = strtol(str_to_hex, NULL, 16);
+		}
+
+		fgets(read_line, MAX_READ_LEN, input_file);	// read nonce
+		for(int r = 8, w = 0 ; r < nonce_size * 2 + 8; r += 2)
+		{
+			lsh_u8 str_to_hex[3] = {read_line[r], read_line[r+1], '\0'};
+			nonce[w++] = strtol(str_to_hex, NULL, 16);
+		}
+
+		fgets(read_line, MAX_READ_LEN, input_file);	// read perstring
+		for(int r = 12, w = 0 ; r < entropy_size * 2 + 12; r += 2)
+		{
+			lsh_u8 str_to_hex[3] = {read_line[r], read_line[r+1], '\0'};
+			per_string[w++] = strtol(str_to_hex, NULL, 16);
+		}
+
+		fgets(read_line, MAX_READ_LEN, input_file);	// read addinput1
+		for(int r = 12, w = 0 ; r < entropy_size * 2 + 12; r += 2)
+		{
+			lsh_u8 str_to_hex[3] = {read_line[r], read_line[r+1], '\0'};
+			add_input[0][w++] = strtol(str_to_hex, NULL, 16);
+		}
+
+		fgets(read_line, MAX_READ_LEN, input_file);	// read addinput2
+		for(int r = 12, w = 0 ; r < entropy_size * 2 + 12; r += 2)
+		{
+			lsh_u8 str_to_hex[3] = {read_line[r], read_line[r+1], '\0'};
+			add_input[1][w++] = strtol(str_to_hex, NULL, 16);
+		}
+
+		fprintf(output_file, "Algo_ID = Hash_DRBG_LSH-256_256 \n\n");	//output text
+		fprintf(output_file, "entropy = ");
+		for(int i = 0 ; i < entropy_size ; i++)
+			fprintf(output_file, "%02x", entropy[0][i]);
+		fprintf(output_file, "\n");
+		fprintf(output_file, "nonce = ");
+		for(int i = 0 ; i < nonce_size ; i++)
+			fprintf(output_file, "%02x", nonce[i]);
+		fprintf(output_file, "\n");
+		fprintf(output_file, "perString = ");
+		for(int i = 0 ; i < per_size ; i++)
+			fprintf(output_file, "%02x", per_string[i]);
+		fprintf(output_file, "\n\n");
+
+
+		drbg_lsh_digest(algtype, entropy, entropy_size, nonce, nonce_size, per_string, per_size, add_input, add_size, output_bits, reseed_cycle, drbg_result, output_file);
+	}
+	else
+	{
+		printf("file does not exist");
+		return ;
+	}
+
+	printf("DRBG Finished \n");
+
+	fclose(input_file);
+	fclose(output_file);
+}
+
 int main()
 {
 	//lsh_test_drive();
 	//hmac_lsh_test_type2();
-
-	lsh_type algtype = LSH_TYPE_256_224;
-	lsh_u8 entropy[4] = {0xFF, 0x11, 0xBB, 0x33};
-	lsh_u8 nonce[1] = {0xCC};
-	lsh_u8 per_string[2] = {0x12, 0x34};
-	lsh_u8 add_input[3] = {0xEE, 0xFF, 0xDD};
-	lsh_u8 drbg_result[LSH512_HASH_VAL_MAX_BYTE_LEN];
-
-	drbg_lsh_digest(algtype, entropy, sizeof(entropy), nonce, sizeof(nonce), per_string, sizeof(per_string), add_input, sizeof(add_input), drbg_result);
+	drbg_lsh_test_drive();
 
 	return 0;
 }

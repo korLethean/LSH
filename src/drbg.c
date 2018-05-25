@@ -53,7 +53,7 @@ lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, lsh_type algtype, con
 		Seed_Bit = 888;
 		strcpy(N, "00000378");
 	}
-	len_seed = 2;
+	len_seed = ceil((double)Seed_Bit / (double)Block_Bit);
 
 	for(int i = 0 ; i < len_seed ; i++)
 	{
@@ -88,46 +88,59 @@ lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, lsh_type algtype, con
 }
 
 
-lsh_err drbg_lsh_inner_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, lsh_u8 *output, int output_bits)
+lsh_err drbg_lsh_inner_output_gen(lsh_u8 *input, lsh_type algtype, lsh_u8 *output, int output_bits)
 {
 	lsh_err result;
 
 	lsh_uint Block_Bit;
-	lsh_uint n;
+	double n;
 
-	lsh_uint *hash_data;
-	lsh_u8 hash_result[3][LSH512_HASH_VAL_MAX_BYTE_LEN];
+	lsh_u8 hash_data[64];
+	lsh_u8 hash_result[3][LSH512_HASH_VAL_MAX_BYTE_LEN] = {'\0', };
 
 	int r, w = 0, counter = 0;
 	int flag = 0;
-	int output_index = output_bits;
+	int output_index = output_bits / 8;
 
-	if (ctx == NULL)
+	if (input == NULL)
 		return LSH_ERR_NULL_PTR;
 
 	if(LSH_IS_LSH256(algtype))
 		Block_Bit = LSH256_HASH_VAL_MAX_BYTE_LEN * 8;
 	else if(LSH_IS_LSH512(algtype))
 		Block_Bit = LSH512_HASH_VAL_MAX_BYTE_LEN * 8;
-	n = output_bits / Block_Bit;
+	n = ceil((double) output_bits / (double) Block_Bit);
 
-	for(int i = 0 ; i < n ; i++)
+	for(int i = 0 ; i < (int)n ; i++)
 	{
-		operation_add(ctx->working_state_V, STATE_MAX_SIZE, 0, i);
-		r = LSH_GET_HASHBYTE(algtype) - 1;
-		w = r;
+		operation_add(input, STATE_MAX_SIZE, 0, 1);
+		for(r = STATE_MAX_SIZE - 1, w = LSH_GET_HASHBYTE(algtype) - 1 ; w > -1 ; w-- )
+			hash_data[w] = input[r--];
 
-		while(counter < LSH_GET_HASHBYTE(algtype))
-		{
-			hash_data[w--] = ctx->working_state_V[r--];
-			counter++;
-		}
-
-		result = lsh_digest(algtype, hash_data, LSH_GET_HASHBYTE(algtype) * 8, hash_result[i]);
+		result = lsh_digest(algtype, hash_data, LSH_GET_HASHBIT(algtype), hash_result[i]);
 	}
+	for(int i = 0 ; i < LSH_GET_HASHBYTE(algtype) ; i++)
+		printf("%02x", hash_result[0][i]);
+	printf("\n");
+	for(int i = 0 ; i < LSH_GET_HASHBYTE(algtype) ; i++)
+		printf("%02x", hash_result[1][i]);
+	printf("\n");
 
 	w = 0;
-	for(r = 0 ; r < output_index ; r++)
+	for(int i = 0 ; i < output_index ; i++)
+	{
+		if(i == LSH_GET_HASHBYTE(algtype))
+		{
+			flag += 1;
+			output_index -= LSH_GET_HASHBYTE(algtype);
+			i = 0;
+		}
+
+		output[w++] = hash_result[flag][i];
+		printf("%02x", output[w-1]);
+	}
+
+	/*for(r = 0 ; r < output_index ; r++)
 	{
 		if(r == LSH_GET_HASHBYTE(algtype))
 		{
@@ -137,7 +150,8 @@ lsh_err drbg_lsh_inner_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype
 		}
 
 		output[w++] = hash_result[flag][r];
-	}
+		printf("%02x", hash_result[flag][r]);
+	}*/
 }
 
 
@@ -260,7 +274,7 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 	operation_add(ctx->working_state_V, STATE_MAX_SIZE, 0, reseed_counter++);
 
 	/// call inner output gen func ///
-	//result = drbg_lsh_inner_output_gen(ctx, algtype, drbg, output_bits);
+	result = drbg_lsh_inner_output_gen(preserved_V, algtype, drbg, output_bits);
 
 	return result;
 }

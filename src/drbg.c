@@ -100,7 +100,7 @@ lsh_err drbg_lsh_inner_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype
 
 	int r, w = 0, counter = 0;
 	int flag = 0;
-	int output_index = STATE_MAX_SIZE;
+	int output_index = output_bits;
 
 	if (ctx == NULL)
 		return LSH_ERR_NULL_PTR;
@@ -109,7 +109,7 @@ lsh_err drbg_lsh_inner_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype
 		Block_Bit = LSH256_HASH_VAL_MAX_BYTE_LEN * 8;
 	else if(LSH_IS_LSH512(algtype))
 		Block_Bit = LSH512_HASH_VAL_MAX_BYTE_LEN * 8;
-	n = 2;
+	n = output_bits / Block_Bit;
 
 	for(int i = 0 ; i < n ; i++)
 	{
@@ -216,6 +216,8 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 	lsh_u8 hash_data[1024] = {'\0', };
 	int hash_data_size;
 	lsh_u8 hash_result[LSH512_HASH_VAL_MAX_BYTE_LEN];
+	lsh_u8 preserved_V[STATE_MAX_SIZE];
+	int reseed_counter = 1;
 
 	int r, w;
 
@@ -233,7 +235,9 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 
 	for(int i = LSH_GET_HASHBYTE(algtype) - 1, start = 0 ; i > -1 ; i--)
 		operation_add(ctx->working_state_V, STATE_MAX_SIZE, start++, hash_result[i]);
-//////////////////////////////////////////////////////////////////////////////////
+
+	for(int i = 0 ; i < STATE_MAX_SIZE ; i++)
+		preserved_V[i] = ctx->working_state_V[i];
 
 	hash_data[0] = 0x03;
 	for(r = 0, w = 1 ; r < STATE_MAX_SIZE ; r++)
@@ -244,10 +248,19 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 	if (result != LSH_SUCCESS)
 		return result;
 
-	/// add operation with C, V, reseed_counter ///
+	for(int i = LSH_GET_HASHBYTE(algtype) - 1, start = 0 ; i > -1 ; i--)
+		operation_add(ctx->working_state_V, STATE_MAX_SIZE, start++, hash_result[i]);
+
+	for(int i = STATE_MAX_SIZE - 1, start = 0 ; i > -1 ; i--)
+		operation_add(ctx->working_state_V, STATE_MAX_SIZE, start++, ctx->working_state_C[i]);
+
+	for(int i = STATE_MAX_SIZE - 1, start = 0 ; i > -1 ; i--)
+		operation_add(ctx->working_state_V, STATE_MAX_SIZE, start++, preserved_V[i]);
+
+	operation_add(ctx->working_state_V, STATE_MAX_SIZE, 0, reseed_counter++);
 
 	/// call inner output gen func ///
-	result = drbg_lsh_inner_output_gen(ctx, algtype, drbg, output_bits);
+	//result = drbg_lsh_inner_output_gen(ctx, algtype, drbg, output_bits);
 
 	return result;
 }

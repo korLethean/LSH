@@ -29,7 +29,6 @@ lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, lsh_type algtype, con
 
 	lsh_uint Block_Bit;
 	lsh_uint Seed_Bit;
-	lsh_u8 N[8];
 	lsh_uint len_seed;
 
 	lsh_u8 hash_data[1024] = {'\0', };
@@ -46,30 +45,36 @@ lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, lsh_type algtype, con
 	{
 		Block_Bit = LSH256_HASH_VAL_MAX_BYTE_LEN * 8;
 		Seed_Bit = 440;
-		strcpy(N, "000001B8");
+		hash_data[1] = 0x00;
+		hash_data[2] = 0x00;
+		hash_data[3] = 0x01;
+		hash_data[4] = 0xB8;	// N = 440
 	}
 	else if(LSH_IS_LSH512(algtype))
 	{
 		Block_Bit = LSH512_HASH_VAL_MAX_BYTE_LEN * 8;
 		Seed_Bit = 888;
-		strcpy(N, "00000378");
+		hash_data[1] = 0x00;
+		hash_data[2] = 0x00;
+		hash_data[3] = 0x03;
+		hash_data[4] = 0x78;	// N = 888
 	}
 	len_seed = ceil((double)Seed_Bit / (double)Block_Bit);
 
 	for(int i = 0 ; i < len_seed ; i++)
 	{
-		hash_data[w++] = 49 + i;	//0x00 + i
+		hash_data[0] = i + 1;	// counter
 
+		w = 5;
 		if(!i) {
-			for(int j = 0 ; j < 8 ; j++)
-				hash_data[w++] = N[j];
-
 			for(r = 0; r < data_size ; r++)
 				hash_data[w++] = data[r];
 		}
 
-		w = 0;
-		result = lsh_digest(algtype, hash_data, (9 + data_size) * 8, hash_result[i]);
+		for(int a = 0 ; a < 5 + data_size ; a++)
+			printf("%02x", hash_data[a]);
+		printf("\n");
+		result = lsh_digest(algtype, hash_data, (5 + data_size) * 8, hash_result[i]);
 	}
 
 	w = 0;

@@ -71,9 +71,6 @@ lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, lsh_type algtype, con
 				hash_data[w++] = data[r];
 		}
 
-		for(int a = 0 ; a < 5 + data_size ; a++)
-			printf("%02x", hash_data[a]);
-		printf("\n");
 		result = lsh_digest(algtype, hash_data, (5 + data_size) * 8, hash_result[i]);
 	}
 

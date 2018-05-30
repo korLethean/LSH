@@ -124,12 +124,27 @@ lsh_err drbg_lsh_inner_output_gen(lsh_u8 *input, lsh_type algtype, lsh_u8 *outpu
 	for(int i = 0 ; i < (int)n ; i++)
 	{
 		operation_add(input, STATE_MAX_SIZE, 0, 1);
-		for(r = STATE_MAX_SIZE - 1, w = seed_bits / 8 - 1 ; w > -1 ; w-- )
+		for(r = STATE_MAX_SIZE - 1, w = Block_Bit / 8 - 1 ; w > -1 ; w-- )
 			hash_data[w] = input[r--];
 
-		result = lsh_digest(algtype, hash_data, seed_bits / 8, hash_result[i]);
+		printf("no. %d state V: ", i + 1);
+		for(int a = 0 ; a < STATE_MAX_SIZE ; a++)
+			printf("%02x", input[a]);
+		printf("\n");
+		printf("no. %d input data of hash: ", i + 1);
+		for(int a = 0 ; a < Block_Bit / 8 ; a++)
+			printf("%02x", hash_data[a]);
+		printf("\n");
+
+		result = lsh_digest(algtype, hash_data, Block_Bit, hash_result[i]);
+
+		printf("no. %d hash: ", i + 1);
+		for(int a = 0 ; a < LSH_GET_HASHBYTE(algtype) ; a++)
+			printf("%02x", hash_result[i][a]);
+		printf("\n");
 	}
 
+	printf("output1: ");
 	w = 0;
 	for(int i = 0 ; i < output_index ; i++)
 	{
@@ -140,7 +155,10 @@ lsh_err drbg_lsh_inner_output_gen(lsh_u8 *input, lsh_type algtype, lsh_u8 *outpu
 			i = 0;
 		}
 		output[w++] = hash_result[flag][i];
+
+		printf("%02x", output[w-1]);
 	}
+	printf("\n");
 
 	return result;
 }

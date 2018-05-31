@@ -91,18 +91,17 @@ lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, lsh_type algtype, con
 }
 
 
-lsh_err drbg_lsh_inner_output_gen(struct DRBG_LSH_Context *ctx, lsh_u8 *input, lsh_type algtype, lsh_u8 *output, int output_bits, FILE *outf)
+lsh_err drbg_lsh_inner_output_gen(lsh_u8 *input, lsh_type algtype, lsh_u8 *output, int output_bits, FILE *outf)
 {
 	lsh_err result;
 
 	lsh_uint Block_Bit;
 	double n;
 
-//	lsh_u8 hash_data[64];
+	lsh_u8 hash_data[64];
 	lsh_u8 hash_result[3][LSH512_HASH_VAL_MAX_BYTE_LEN];
 
-//	int r, w = 0, counter = 0;
-	int w = 0;
+	int r, w = 0, counter = 0;
 	int flag = 0;
 	int seed_bits;
 	int output_index = output_bits / 8;
@@ -122,27 +121,30 @@ lsh_err drbg_lsh_inner_output_gen(struct DRBG_LSH_Context *ctx, lsh_u8 *input, l
 	}
 	n = ceil((double) output_bits / (double) Block_Bit);
 
+	for(int a = 0 ; a < STATE_MAX_SIZE ; a++)
+		hash_data[a] = input[a];
+
 	for(int i = 0 ; i < (int)n ; i++)
 	{
+		operation_add(hash_data, STATE_MAX_SIZE, 0, i);
+
+		result = lsh_digest(algtype, hash_data, STATE_MAX_SIZE * 8, hash_result[i]);
+
 		printf("no. %d state V: ", i + 1);
-			for(int a = 0 ; a < STATE_MAX_SIZE ; a++)
-				printf("%02x", ctx->working_state_V[a]);
-		printf("\n");
-
-		printf("no. %d input data of hash: ", i + 1);
 		for(int a = 0 ; a < STATE_MAX_SIZE ; a++)
-			printf("%02x", ctx->working_state_V[a]);
+			printf("%02x", hash_data[a]);
 		printf("\n");
-
-		result = lsh_digest(algtype, ctx->working_state_V, STATE_MAX_SIZE, hash_result[i]);
 
 		printf("no. %d hash: ", i + 1);
 		for(int a = 0 ; a < LSH_GET_HASHBYTE(algtype) ; a++)
 			printf("%02x", hash_result[i][a]);
 		printf("\n");
+
+
 	}
 
 	printf("output1: ");
+	w = 0;
 	for(int i = 0 ; i < output_index ; i++)
 	{
 		if(i == Block_Bit / 8)
@@ -298,8 +300,7 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 
 	lsh_u8 hash_data[1024] = {'\0', };
 	int hash_data_size;
-	lsh_u8 state_w[LSH512_HASH_VAL_MAX_BYTE_LEN];
-	lsh_u8 output[LSH512_HASH_VAL_MAX_BYTE_LEN];
+	lsh_u8 hash_result[LSH512_HASH_VAL_MAX_BYTE_LEN];
 
 	int r, w;
 	static int counter = 1;
@@ -341,17 +342,17 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 			hash_data[w++] = add_input[r];
 		hash_data_size = STATE_MAX_SIZE + add_size + 1;
 
-		result = lsh_digest(algtype, hash_data, hash_data_size * 8, state_w);
+		result = lsh_digest(algtype, hash_data, hash_data_size * 8, hash_result);
 		if (result != LSH_SUCCESS)
 			return result;
 
 		for(int i = LSH_GET_HASHBYTE(algtype) - 1, start = 0 ; i > -1 ; i--)
-			operation_add(ctx->working_state_V, STATE_MAX_SIZE, start++, state_w[i]);
+			operation_add(ctx->working_state_V, STATE_MAX_SIZE, start++, hash_result[i]);
 
 		{		//***** TEXT OUTPUT - w(hash) V *****//
 			fprintf(outf, "w = ");
 			for(int i = 0 ; i < LSH_GET_HASHBYTE(algtype) ; i++)
-				fprintf(outf, "%02x", state_w[i]);
+				fprintf(outf, "%02x", hash_result[i]);
 			fprintf(outf, "\n");
 			fprintf(outf, "V = ");
 			for(int i = 0 ; i < STATE_MAX_SIZE ; i++)
@@ -360,9 +361,7 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 		}
 	}
 
-	//result = lsh_digest(algtype, ctx->working_state_V, STATE_MAX_SIZE, output);
-	result = drbg_lsh_inner_output_gen(ctx, state_w, algtype, drbg, output_bits, outf);
-	//result = drbg_lsh_inner_output_gen(ctx->working_state_V, algtype, drbg, output_bits, outf);
+	result = drbg_lsh_inner_output_gen(ctx->working_state_V, algtype, drbg, output_bits, outf);
 
 	{		//***** TEXT OUTPUT - output(count) *****//
 		fprintf(outf, "output%d = ", counter++);
@@ -376,12 +375,12 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 		hash_data[w++] = ctx->working_state_V[r];
 	hash_data_size = STATE_MAX_SIZE + 1;
 
-	result = lsh_digest(algtype, hash_data, hash_data_size * 8, state_w);
+	result = lsh_digest(algtype, hash_data, hash_data_size * 8, hash_result);
 	if (result != LSH_SUCCESS)
 		return result;
 
 	for(int i = LSH_GET_HASHBYTE(algtype) - 1, start = 0 ; i > -1 ; i--)
-		operation_add(ctx->working_state_V, STATE_MAX_SIZE, start++, state_w[i]);
+		operation_add(ctx->working_state_V, STATE_MAX_SIZE, start++, hash_result[i]);
 
 	for(int i = STATE_MAX_SIZE - 1, start = 0 ; i > -1 ; i--)
 		operation_add(ctx->working_state_V, STATE_MAX_SIZE, start++, ctx->working_state_C[i]);
@@ -391,7 +390,7 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 	{		//***** TEXT OUTPUT - w(hash) V (after inner reseed) *****//
 		fprintf(outf, "w = ");
 		for(int i = 0 ; i < LSH_GET_HASHBYTE(algtype) ; i++)
-			fprintf(outf, "%02x", state_w[i]);
+			fprintf(outf, "%02x", hash_result[i]);
 		fprintf(outf, "\n");
 		fprintf(outf, "V = ");
 		for(int i = 0 ; i < STATE_MAX_SIZE ; i++)

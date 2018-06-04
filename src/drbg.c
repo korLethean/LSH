@@ -129,21 +129,8 @@ lsh_err drbg_lsh_inner_output_gen(lsh_u8 *input, lsh_type algtype, lsh_u8 *outpu
 		operation_add(hash_data, STATE_MAX_SIZE, 0, i);
 
 		result = lsh_digest(algtype, hash_data, STATE_MAX_SIZE * 8, hash_result[i]);
-
-		printf("no. %d state V: ", i + 1);
-		for(int a = 0 ; a < STATE_MAX_SIZE ; a++)
-			printf("%02x", hash_data[a]);
-		printf("\n");
-
-		printf("no. %d hash: ", i + 1);
-		for(int a = 0 ; a < LSH_GET_HASHBYTE(algtype) ; a++)
-			printf("%02x", hash_result[i][a]);
-		printf("\n");
-
-
 	}
 
-	printf("output1: ");
 	w = 0;
 	for(int i = 0 ; i < output_index ; i++)
 	{
@@ -155,9 +142,7 @@ lsh_err drbg_lsh_inner_output_gen(lsh_u8 *input, lsh_type algtype, lsh_u8 *outpu
 		}
 		output[w++] = hash_result[flag][i];
 
-		printf("%02x", output[w-1]);
 	}
-	printf("\n");
 
 	return result;
 }
@@ -364,9 +349,14 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 	result = drbg_lsh_inner_output_gen(ctx->working_state_V, algtype, drbg, output_bits, outf);
 
 	{		//***** TEXT OUTPUT - output(count) *****//
+		printf("output%d = ", counter); // console output
 		fprintf(outf, "output%d = ", counter++);
 		for(int i = 0 ; i < output_bits / 8 ; i++)
+		{
+			printf("%02x", drbg[i]);	// console output
 			fprintf(outf, "%02x", drbg[i]);
+		}
+		printf("\n");	// console output
 		fprintf(outf, "\n\n");
 	}
 

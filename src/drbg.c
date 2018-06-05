@@ -36,28 +36,43 @@ lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, lsh_type algtype, con
 
 	int r, w = 0;
 	int flag = 0;
-	int output_index = 55;
+	int output_index;
 
 	if (ctx == NULL)
 		return LSH_ERR_NULL_PTR;
 
 	if(LSH_IS_LSH256(algtype))
 	{
-		Block_Bit = LSH256_HASH_VAL_MAX_BYTE_LEN * 8;
+		Block_Bit = LSH_GET_HASHBYTE(algtype) * 8;
 		Seed_Bit = 440;
 		hash_data[1] = 0x00;
 		hash_data[2] = 0x00;
 		hash_data[3] = 0x01;
 		hash_data[4] = 0xB8;	// N = 440
+		output_index = STATE_MAX_SIZE_256;
 	}
 	else if(LSH_IS_LSH512(algtype))
 	{
-		Block_Bit = LSH512_HASH_VAL_MAX_BYTE_LEN * 8;
-		Seed_Bit = 888;
-		hash_data[1] = 0x00;
-		hash_data[2] = 0x00;
-		hash_data[3] = 0x03;
-		hash_data[4] = 0x78;	// N = 888
+		if(algtype == LSH_TYPE_384 || algtype == LSH_TYPE_512)
+		{
+			Block_Bit = LSH_GET_HASHBYTE(algtype) * 8;
+			Seed_Bit = 888;
+			hash_data[1] = 0x00;
+			hash_data[2] = 0x00;
+			hash_data[3] = 0x03;
+			hash_data[4] = 0x78;	// N = 888
+			output_index = STATE_MAX_SIZE_512;
+		}
+		else
+		{
+			Block_Bit = LSH_GET_HASHBYTE(algtype) * 8;
+			Seed_Bit = 440;
+			hash_data[1] = 0x00;
+			hash_data[2] = 0x00;
+			hash_data[3] = 0x01;
+			hash_data[4] = 0xB8;	// N = 440
+			output_index = STATE_MAX_SIZE_256;
+		}
 	}
 	len_seed = ceil((double)Seed_Bit / (double)Block_Bit);
 
@@ -97,8 +112,9 @@ lsh_err drbg_lsh_inner_output_gen(lsh_u8 *input, lsh_type algtype, lsh_u8 *outpu
 
 	lsh_uint Block_Bit;
 	double n;
+	int loop_count;
 
-	lsh_u8 hash_data[64];
+	lsh_u8 hash_data[110];
 	lsh_u8 hash_result[3][LSH512_HASH_VAL_MAX_BYTE_LEN];
 
 	int r, w = 0, counter = 0;
@@ -113,22 +129,31 @@ lsh_err drbg_lsh_inner_output_gen(lsh_u8 *input, lsh_type algtype, lsh_u8 *outpu
 
 	if(LSH_IS_LSH256(algtype))
 	{
-		Block_Bit = LSH256_HASH_VAL_MAX_BYTE_LEN * 8;
+		Block_Bit = LSH_GET_HASHBYTE(algtype) * 8;
 		seed_bits = 440;
 		STATE_MAX_SIZE = STATE_MAX_SIZE_256;
 	}
 	else if(LSH_IS_LSH512(algtype))
 	{
-		Block_Bit = LSH512_HASH_VAL_MAX_BYTE_LEN * 8;
-		seed_bits = 888;
-		STATE_MAX_SIZE = STATE_MAX_SIZE_512;
+		if(algtype == LSH_TYPE_384 || algtype == LSH_TYPE_512)
+		{
+			Block_Bit = LSH_GET_HASHBYTE(algtype) * 8;
+			seed_bits = 888;
+			STATE_MAX_SIZE = STATE_MAX_SIZE_512;
+		}
+		else
+		{
+			Block_Bit = LSH_GET_HASHBYTE(algtype) * 8;
+			seed_bits = 440;
+			STATE_MAX_SIZE = STATE_MAX_SIZE_256;
+		}
 	}
 	n = ceil((double) output_bits / (double) Block_Bit);
 
 	for(int a = 0 ; a < STATE_MAX_SIZE ; a++)
 		hash_data[a] = input[a];
 
-	for(int i = 0 ; i < (int)n ; i++)
+	for(int i = 0 ; i < (int) n ; i++)
 	{
 		operation_add(hash_data, STATE_MAX_SIZE, 0, i);
 
@@ -144,8 +169,8 @@ lsh_err drbg_lsh_inner_output_gen(lsh_u8 *input, lsh_type algtype, lsh_u8 *outpu
 			output_index -= Block_Bit / 8;
 			i = 0;
 		}
-		output[w++] = hash_result[flag][i];
 
+		output[w++] = hash_result[flag][i];
 	}
 
 	return result;
@@ -171,9 +196,18 @@ lsh_err drbg_lsh_init(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_
 	}
 	else if(LSH_IS_LSH512(algtype))
 	{
-		target_state_V = ctx->working_state_V512;
-		target_state_C = ctx->working_state_C512;
-		STATE_MAX_SIZE = STATE_MAX_SIZE_512;
+		if(algtype == LSH_TYPE_384 || algtype == LSH_TYPE_512)
+		{
+			target_state_V = ctx->working_state_V512;
+			target_state_C = ctx->working_state_C512;
+			STATE_MAX_SIZE = STATE_MAX_SIZE_512;
+		}
+		else
+		{
+			target_state_V = ctx->working_state_V256;
+			target_state_C = ctx->working_state_C256;
+			STATE_MAX_SIZE = STATE_MAX_SIZE_256;
+		}
 	}
 
 	for(r = 0, w = 0 ; r < ent_size ; r++)
@@ -245,9 +279,18 @@ lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, lsh_type algtype, const ls
 	}
 	else if(LSH_IS_LSH512(algtype))
 	{
-		target_state_V = ctx->working_state_V512;
-		target_state_C = ctx->working_state_C512;
-		STATE_MAX_SIZE = STATE_MAX_SIZE_512;
+		if(algtype == LSH_TYPE_384 || algtype == LSH_TYPE_512)
+		{
+			target_state_V = ctx->working_state_V512;
+			target_state_C = ctx->working_state_C512;
+			STATE_MAX_SIZE = STATE_MAX_SIZE_512;
+		}
+		else
+		{
+			target_state_V = ctx->working_state_V256;
+			target_state_C = ctx->working_state_C256;
+			STATE_MAX_SIZE = STATE_MAX_SIZE_256;
+		}
 	}
 
 	{
@@ -338,9 +381,18 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 	}
 	else if(LSH_IS_LSH512(algtype))
 	{
-		target_state_V = ctx->working_state_V512;
-		target_state_C = ctx->working_state_C512;
-		STATE_MAX_SIZE = STATE_MAX_SIZE_512;
+		if(algtype == LSH_TYPE_384 || algtype == LSH_TYPE_512)
+		{
+			target_state_V = ctx->working_state_V512;
+			target_state_C = ctx->working_state_C512;
+			STATE_MAX_SIZE = STATE_MAX_SIZE_512;
+		}
+		else
+		{
+			target_state_V = ctx->working_state_V256;
+			target_state_C = ctx->working_state_C256;
+			STATE_MAX_SIZE = STATE_MAX_SIZE_256;
+		}
 	}
 
 	{		//***** TEXT OUTPUT - V C reseed_counter addInput *****//

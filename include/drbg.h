@@ -9,8 +9,8 @@
 extern "C" {
 #endif
 
-#define STATE_MAX_SIZE 55
-
+#define STATE_MAX_SIZE_256 55
+#define STATE_MAX_SIZE_512 110
 
 /**
  * DRBG 설정 정보
@@ -35,8 +35,10 @@ struct DRBG_Administrative {
 struct DRBG_LSH_Context {
 	union LSH_Context drbg_ctx;
 	struct DRBG_Administrative setting;
-	lsh_u8 working_state_V[STATE_MAX_SIZE];
-	lsh_u8 working_state_C[STATE_MAX_SIZE];
+	lsh_u8 working_state_V256[STATE_MAX_SIZE_256];
+	lsh_u8 working_state_C256[STATE_MAX_SIZE_256];
+	lsh_u8 working_state_V512[STATE_MAX_SIZE_512];
+	lsh_u8 working_state_C512[STATE_MAX_SIZE_512];
 	int reseed_counter;
 };
 

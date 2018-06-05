@@ -106,6 +106,8 @@ lsh_err drbg_lsh_inner_output_gen(lsh_u8 *input, lsh_type algtype, lsh_u8 *outpu
 	int seed_bits;
 	int output_index = output_bits / 8;
 
+	int STATE_MAX_SIZE;
+
 	if (input == NULL)
 		return LSH_ERR_NULL_PTR;
 
@@ -113,11 +115,13 @@ lsh_err drbg_lsh_inner_output_gen(lsh_u8 *input, lsh_type algtype, lsh_u8 *outpu
 	{
 		Block_Bit = LSH256_HASH_VAL_MAX_BYTE_LEN * 8;
 		seed_bits = 440;
+		STATE_MAX_SIZE = STATE_MAX_SIZE_256;
 	}
 	else if(LSH_IS_LSH512(algtype))
 	{
 		Block_Bit = LSH512_HASH_VAL_MAX_BYTE_LEN * 8;
 		seed_bits = 888;
+		STATE_MAX_SIZE = STATE_MAX_SIZE_512;
 	}
 	n = ceil((double) output_bits / (double) Block_Bit);
 
@@ -153,8 +157,24 @@ lsh_err drbg_lsh_init(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_
 	lsh_err result;
 
 	lsh_u8 input[1024] = {'\0', };
+	lsh_u8 *target_state_V;
+	lsh_u8 *target_state_C;
 
 	int r, w, input_size;
+	int STATE_MAX_SIZE;
+
+	if(LSH_IS_LSH256(algtype))
+	{
+		target_state_V = ctx->working_state_V256;
+		target_state_C = ctx->working_state_C256;
+		STATE_MAX_SIZE = STATE_MAX_SIZE_256;
+	}
+	else if(LSH_IS_LSH512(algtype))
+	{
+		target_state_V = ctx->working_state_V512;
+		target_state_C = ctx->working_state_C512;
+		STATE_MAX_SIZE = STATE_MAX_SIZE_512;
+	}
 
 	for(r = 0, w = 0 ; r < ent_size ; r++)
 		input[w++] = entropy[r];
@@ -166,7 +186,7 @@ lsh_err drbg_lsh_init(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_
 		input[w++] = per_string[r];
 	input_size = ent_size + non_size + per_size;
 
-	result = drbg_derivation_func(ctx, algtype, input, input_size, ctx->working_state_V);
+	result = drbg_derivation_func(ctx, algtype, input, input_size, target_state_V);
 	if (result != LSH_SUCCESS)
 		return result;
 
@@ -177,16 +197,16 @@ lsh_err drbg_lsh_init(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_
 		fprintf(outf, "\n");
 		fprintf(outf, "dfOutput = ");
 		for(int i = 0 ; i < STATE_MAX_SIZE ; i++)
-			fprintf(outf, "%02x", ctx->working_state_V[i]);
+			fprintf(outf, "%02x", target_state_V[i]);
 		fprintf(outf, "\n\n");
 	}
 	memset(input, 0x00, 1024);
 
 	input[0] = 0x00;
 	for(r = 0, w = 1 ; r < STATE_MAX_SIZE ; r++)
-		input[w++] = ctx->working_state_V[r];
+		input[w++] = target_state_V[r];
 
-	result = drbg_derivation_func(ctx, algtype, input, STATE_MAX_SIZE + 1, ctx->working_state_C);
+	result = drbg_derivation_func(ctx, algtype, input, STATE_MAX_SIZE + 1, target_state_C);
 	if (result != LSH_SUCCESS)
 			return result;
 
@@ -197,7 +217,7 @@ lsh_err drbg_lsh_init(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_
 		fprintf(outf, "\n");
 		fprintf(outf, "dfOutput = ");
 		for(int i = 0 ; i < STATE_MAX_SIZE ; i++)
-			fprintf(outf, "%02x", ctx->working_state_C[i]);
+			fprintf(outf, "%02x", target_state_C[i]);
 	}
 
 	ctx->reseed_counter = 1;
@@ -211,8 +231,24 @@ lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, lsh_type algtype, const ls
 	lsh_err result;
 
 	lsh_u8 input[1024] = {'\0' ,};
+	lsh_u8 *target_state_V;
+	lsh_u8 *target_state_C;
 
 	int r, w, input_size;
+	int STATE_MAX_SIZE;
+
+	if(LSH_IS_LSH256(algtype))
+	{
+		target_state_V = ctx->working_state_V256;
+		target_state_C = ctx->working_state_C256;
+		STATE_MAX_SIZE = STATE_MAX_SIZE_256;
+	}
+	else if(LSH_IS_LSH512(algtype))
+	{
+		target_state_V = ctx->working_state_V512;
+		target_state_C = ctx->working_state_C512;
+		STATE_MAX_SIZE = STATE_MAX_SIZE_512;
+	}
 
 	{
 		//***** TEXT OUTPUT - entropy *****//
@@ -224,7 +260,7 @@ lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, lsh_type algtype, const ls
 
 	input[0] = 0x01;
 	for(r = 0, w = 1 ; r < STATE_MAX_SIZE ; r++)
-		input[w++] = ctx->working_state_V[r];
+		input[w++] = target_state_V[r];
 
 	for(r = 0 ; r < ent_size ; r++)
 		input[w++] = entropy[r];
@@ -233,7 +269,7 @@ lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, lsh_type algtype, const ls
 		input[w++] = add_input[r];
 	input_size = STATE_MAX_SIZE + ent_size + add_size + 1;
 
-	result = drbg_derivation_func(ctx, algtype, input, input_size, ctx->working_state_V);
+	result = drbg_derivation_func(ctx, algtype, input, input_size, target_state_V);
 	if (result != LSH_SUCCESS)
 		return result;
 
@@ -244,7 +280,7 @@ lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, lsh_type algtype, const ls
 		fprintf(outf, "\n");
 		fprintf(outf, "dfOutput = ");
 		for(int i = 0 ; i < STATE_MAX_SIZE ; i++)
-			fprintf(outf, "%02x", ctx->working_state_V[i]);
+			fprintf(outf, "%02x", target_state_V[i]);
 		fprintf(outf, "\n\n");
 	}
 
@@ -252,9 +288,9 @@ lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, lsh_type algtype, const ls
 
 	input[0] = 0x00;
 	for(r = 0, w = 1 ; r < STATE_MAX_SIZE ; r++)
-		input[w++] = ctx->working_state_V[r];
+		input[w++] = target_state_V[r];
 
-	result = drbg_derivation_func(ctx, algtype, input, STATE_MAX_SIZE + 1, ctx->working_state_C);
+	result = drbg_derivation_func(ctx, algtype, input, STATE_MAX_SIZE + 1, target_state_C);
 	if (result != LSH_SUCCESS)
 		return result;
 
@@ -265,7 +301,7 @@ lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, lsh_type algtype, const ls
 		fprintf(outf, "\n");
 		fprintf(outf, "dfOutput = ");
 		for(int i = 0 ; i < STATE_MAX_SIZE ; i++)
-			fprintf(outf, "%02x", ctx->working_state_C[i]);
+			fprintf(outf, "%02x", target_state_C[i]);
 		fprintf(outf, "\n\n");
 	}
 
@@ -286,20 +322,37 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 	lsh_u8 hash_data[1024] = {'\0', };
 	int hash_data_size;
 	lsh_u8 hash_result[LSH512_HASH_VAL_MAX_BYTE_LEN];
+	lsh_u8 *target_state_V;
+	lsh_u8 *target_state_C;
 
 	int r, w;
+	int STATE_MAX_SIZE;
+
 	static int counter = 1;
+
+	if(LSH_IS_LSH256(algtype))
+	{
+		target_state_V = ctx->working_state_V256;
+		target_state_C = ctx->working_state_C256;
+		STATE_MAX_SIZE = STATE_MAX_SIZE_256;
+	}
+	else if(LSH_IS_LSH512(algtype))
+	{
+		target_state_V = ctx->working_state_V512;
+		target_state_C = ctx->working_state_C512;
+		STATE_MAX_SIZE = STATE_MAX_SIZE_512;
+	}
 
 	{		//***** TEXT OUTPUT - V C reseed_counter addInput *****//
 		fprintf(outf, "\n\n");
 		fprintf(outf, "V = ");
 		for(int i = 0 ; i < STATE_MAX_SIZE ; i++)
-			fprintf(outf, "%02x", ctx->working_state_V[i]);
+			fprintf(outf, "%02x", target_state_V[i]);
 		fprintf(outf, "\n");
 
 		fprintf(outf, "C = ");
 		for(int i = 0 ; i < STATE_MAX_SIZE ; i++)
-			fprintf(outf, "%02x", ctx->working_state_C[i]);
+			fprintf(outf, "%02x", target_state_C[i]);
 		fprintf(outf, "\n");
 
 		fprintf(outf, "reseed_counter = %d \n", ctx->reseed_counter);
@@ -321,7 +374,7 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 	{	// ****** inner reseed ****** //
 		hash_data[0] = 0x02;
 		for(r = 0 , w = 1 ; r < STATE_MAX_SIZE ; r++)
-			hash_data[w++] = ctx->working_state_V[r];
+			hash_data[w++] = target_state_V[r];
 
 		for(r = 0 ; r < add_size ; r++)
 			hash_data[w++] = add_input[r];
@@ -332,7 +385,7 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 			return result;
 
 		for(int i = LSH_GET_HASHBYTE(algtype) - 1, start = 0 ; i > -1 ; i--)
-			operation_add(ctx->working_state_V, STATE_MAX_SIZE, start++, hash_result[i]);
+			operation_add(target_state_V, STATE_MAX_SIZE, start++, hash_result[i]);
 
 		{		//***** TEXT OUTPUT - w(hash) V *****//
 			fprintf(outf, "w = ");
@@ -341,12 +394,12 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 			fprintf(outf, "\n");
 			fprintf(outf, "V = ");
 			for(int i = 0 ; i < STATE_MAX_SIZE ; i++)
-				fprintf(outf, "%02x", ctx->working_state_V[i]);
+				fprintf(outf, "%02x", target_state_V[i]);
 			fprintf(outf, "\n\n");
 		}
 	}
 
-	result = drbg_lsh_inner_output_gen(ctx->working_state_V, algtype, drbg, output_bits, outf);
+	result = drbg_lsh_inner_output_gen(target_state_V, algtype, drbg, output_bits, outf);
 
 	{		//***** TEXT OUTPUT - output(count) *****//
 		printf("output%d = ", counter); // console output
@@ -362,7 +415,7 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 
 	hash_data[0] = 0x03;
 	for(r = 0, w = 1 ; r < STATE_MAX_SIZE ; r++)
-		hash_data[w++] = ctx->working_state_V[r];
+		hash_data[w++] = target_state_V[r];
 	hash_data_size = STATE_MAX_SIZE + 1;
 
 	result = lsh_digest(algtype, hash_data, hash_data_size * 8, hash_result);
@@ -370,12 +423,12 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 		return result;
 
 	for(int i = LSH_GET_HASHBYTE(algtype) - 1, start = 0 ; i > -1 ; i--)
-		operation_add(ctx->working_state_V, STATE_MAX_SIZE, start++, hash_result[i]);
+		operation_add(target_state_V, STATE_MAX_SIZE, start++, hash_result[i]);
 
 	for(int i = STATE_MAX_SIZE - 1, start = 0 ; i > -1 ; i--)
-		operation_add(ctx->working_state_V, STATE_MAX_SIZE, start++, ctx->working_state_C[i]);
+		operation_add(target_state_V, STATE_MAX_SIZE, start++, target_state_C[i]);
 
-	operation_add(ctx->working_state_V, STATE_MAX_SIZE, 0, ctx->reseed_counter);
+	operation_add(target_state_V, STATE_MAX_SIZE, 0, ctx->reseed_counter);
 
 	{		//***** TEXT OUTPUT - w(hash) V (after inner reseed) *****//
 		fprintf(outf, "w = ");
@@ -384,7 +437,7 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 		fprintf(outf, "\n");
 		fprintf(outf, "V = ");
 		for(int i = 0 ; i < STATE_MAX_SIZE ; i++)
-			fprintf(outf, "%02x", ctx->working_state_V[i]);
+			fprintf(outf, "%02x", target_state_V[i]);
 		fprintf(outf, "\n");
 	}
 

@@ -185,7 +185,8 @@ lsh_err drbg_lsh_init(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy, int e
 	lsh_u8 *target_state_V;
 	lsh_u8 *target_state_C;
 
-	int r, w, input_size;
+	int r, w;
+	int input_size = 0;
 	int STATE_MAX_SIZE;
 
 	if(LSH_IS_LSH256(ctx->setting.drbgtype))
@@ -216,9 +217,13 @@ lsh_err drbg_lsh_init(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy, int e
 	for(r = 0 ; r < non_size ; r++)
 		input[w++] = nonce[r];
 
-	for(r = 0 ; r < per_size ; r++)
-		input[w++] = per_string[r];
-	input_size = ent_size + non_size + per_size;
+	if(ctx->setting.usingperstring)
+	{
+		for(r = 0 ; r < per_size ; r++)
+			input[w++] = per_string[r];
+		input_size += per_size;
+	}
+	input_size += ent_size + non_size;
 
 	result = drbg_derivation_func(ctx, input, input_size, target_state_V);
 	if (result != LSH_SUCCESS)
@@ -268,7 +273,8 @@ lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy, int
 	lsh_u8 *target_state_V;
 	lsh_u8 *target_state_C;
 
-	int r, w, input_size;
+	int r, w;
+	int input_size = 0;
 	int STATE_MAX_SIZE;
 
 	if(LSH_IS_LSH256(ctx->setting.drbgtype))
@@ -308,9 +314,13 @@ lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy, int
 	for(r = 0 ; r < ent_size ; r++)
 		input[w++] = entropy[r];
 
-	for(r = 0 ; r < add_size ; r++)
-		input[w++] = add_input[r];
-	input_size = STATE_MAX_SIZE + ent_size + add_size + 1;
+	if(ctx->setting.usingaddinput)
+	{
+		for(r = 0 ; r < add_size ; r++)
+			input[w++] = add_input[r];
+		input_size += add_size;
+	}
+	input_size += STATE_MAX_SIZE + ent_size + 1;
 
 	result = drbg_derivation_func(ctx, input, input_size, target_state_V);
 	if (result != LSH_SUCCESS)
@@ -410,20 +420,24 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy,
 
 		fprintf(outf, "reseed_counter = %d \n", ctx->reseed_counter);
 
-		fprintf(outf, "addInput = ");
-		for(int i = 0 ; i < add_size ; i++)
-			fprintf(outf, "%02x", add_input[i]);
-		fprintf(outf, "\n\n");
+		if(ctx->setting.usingaddinput)
+		{
+			fprintf(outf, "addInput = ");
+			for(int i = 0 ; i < add_size ; i++)
+				fprintf(outf, "%02x", add_input[i]);
+			fprintf(outf, "\n");
+		}
+		fprintf(outf, "\n");
 	}
 
 
-	if(ctx->reseed_counter > ctx->setting.refreshperiod || ctx->setting.usingaddinput == false)
+	if(ctx->reseed_counter > ctx->setting.refreshperiod || ctx->setting.predicttolerance)
 	{
 		result = drbg_lsh_reseed(ctx, entropy, ent_size, add_input, add_size, outf);
 		if (result != LSH_SUCCESS)
 			return result;
 	}
-	else
+	else if(ctx->setting.usingaddinput)
 	{	// ****** inner reseed ****** //
 		hash_data[0] = 0x02;
 		for(r = 0 , w = 1 ; r < STATE_MAX_SIZE ; r++)
@@ -511,6 +525,7 @@ lsh_err drbg_lsh_digest(lsh_type algtype, lsh_u8 (*entropy)[64], int ent_size, l
 
 	ctx.setting.drbgtype = algtype;
 	ctx.setting.refreshperiod = cycle;
+
 	if(per_size != 0)
 		ctx.setting.usingperstring = true;
 	else
@@ -520,6 +535,8 @@ lsh_err drbg_lsh_digest(lsh_type algtype, lsh_u8 (*entropy)[64], int ent_size, l
 		ctx.setting.usingaddinput = true;
 	else
 		ctx.setting.usingaddinput = false;
+
+	ctx.setting.predicttolerance = false;
 
 	result = drbg_lsh_init(&ctx, entropy[0], ent_size, nonce, non_size, per_string, per_size, outf);
 	if (result != LSH_SUCCESS)

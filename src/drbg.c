@@ -23,7 +23,7 @@ void operation_add(unsigned char *arr, int ary_size, int start_index, unsigned i
 }
 
 
-lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_u8 *data, int data_size, lsh_u8 *output)
+lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, const lsh_u8 *data, int data_size, lsh_u8 *output)
 {
 	lsh_err result;
 
@@ -41,9 +41,9 @@ lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, lsh_type algtype, con
 	if (ctx == NULL)
 		return LSH_ERR_NULL_PTR;
 
-	if(LSH_IS_LSH256(algtype))
+	if(LSH_IS_LSH256(ctx->setting.drbgtype))
 	{
-		Block_Bit = LSH_GET_HASHBYTE(algtype) * 8;
+		Block_Bit = LSH_GET_HASHBYTE(ctx->setting.drbgtype) * 8;
 		Seed_Bit = 440;
 		hash_data[1] = 0x00;
 		hash_data[2] = 0x00;
@@ -51,11 +51,11 @@ lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, lsh_type algtype, con
 		hash_data[4] = 0xB8;	// N = 440
 		output_index = STATE_MAX_SIZE_256;
 	}
-	else if(LSH_IS_LSH512(algtype))
+	else if(LSH_IS_LSH512(ctx->setting.drbgtype))
 	{
-		if(algtype == LSH_TYPE_384 || algtype == LSH_TYPE_512)
+		if(ctx->setting.drbgtype == LSH_TYPE_384 || ctx->setting.drbgtype == LSH_TYPE_512)
 		{
-			Block_Bit = LSH_GET_HASHBYTE(algtype) * 8;
+			Block_Bit = LSH_GET_HASHBYTE(ctx->setting.drbgtype) * 8;
 			Seed_Bit = 888;
 			hash_data[1] = 0x00;
 			hash_data[2] = 0x00;
@@ -65,7 +65,7 @@ lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, lsh_type algtype, con
 		}
 		else
 		{
-			Block_Bit = LSH_GET_HASHBYTE(algtype) * 8;
+			Block_Bit = LSH_GET_HASHBYTE(ctx->setting.drbgtype) * 8;
 			Seed_Bit = 440;
 			hash_data[1] = 0x00;
 			hash_data[2] = 0x00;
@@ -86,16 +86,16 @@ lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, lsh_type algtype, con
 				hash_data[w++] = data[r];
 		}
 
-		result = lsh_digest(algtype, hash_data, (5 + data_size) * 8, hash_result[i]);
+		result = lsh_digest(ctx->setting.drbgtype, hash_data, (5 + data_size) * 8, hash_result[i]);
 	}
 
 	w = 0;
 	for(int i = 0 ; i < output_index ; i++)
 	{
-		if(i == LSH_GET_HASHBYTE(algtype))
+		if(i == LSH_GET_HASHBYTE(ctx->setting.drbgtype))
 		{
 			flag += 1;
-			output_index -= LSH_GET_HASHBYTE(algtype);
+			output_index -= LSH_GET_HASHBYTE(ctx->setting.drbgtype);
 			i = 0;
 		}
 
@@ -106,7 +106,7 @@ lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, lsh_type algtype, con
 }
 
 
-lsh_err drbg_lsh_inner_output_gen(lsh_u8 *input, lsh_type algtype, lsh_u8 *output, int output_bits, FILE *outf)
+lsh_err drbg_lsh_inner_output_gen(struct DRBG_LSH_Context *ctx, lsh_u8 *input, lsh_u8 *output, int output_bits, FILE *outf)
 {
 	lsh_err result;
 
@@ -114,7 +114,7 @@ lsh_err drbg_lsh_inner_output_gen(lsh_u8 *input, lsh_type algtype, lsh_u8 *outpu
 	double n;
 	int loop_count;
 
-	lsh_u8 hash_data[110];
+	lsh_u8 hash_data[111];
 	lsh_u8 hash_result[3][LSH512_HASH_VAL_MAX_BYTE_LEN];
 
 	int r, w = 0, counter = 0;
@@ -127,23 +127,23 @@ lsh_err drbg_lsh_inner_output_gen(lsh_u8 *input, lsh_type algtype, lsh_u8 *outpu
 	if (input == NULL)
 		return LSH_ERR_NULL_PTR;
 
-	if(LSH_IS_LSH256(algtype))
+	if(LSH_IS_LSH256(ctx->setting.drbgtype))
 	{
-		Block_Bit = LSH_GET_HASHBYTE(algtype) * 8;
+		Block_Bit = LSH_GET_HASHBYTE(ctx->setting.drbgtype) * 8;
 		seed_bits = 440;
 		STATE_MAX_SIZE = STATE_MAX_SIZE_256;
 	}
-	else if(LSH_IS_LSH512(algtype))
+	else if(LSH_IS_LSH512(ctx->setting.drbgtype))
 	{
-		if(algtype == LSH_TYPE_384 || algtype == LSH_TYPE_512)
+		if(ctx->setting.drbgtype == LSH_TYPE_384 || ctx->setting.drbgtype == LSH_TYPE_512)
 		{
-			Block_Bit = LSH_GET_HASHBYTE(algtype) * 8;
+			Block_Bit = LSH_GET_HASHBYTE(ctx->setting.drbgtype) * 8;
 			seed_bits = 888;
 			STATE_MAX_SIZE = STATE_MAX_SIZE_512;
 		}
 		else
 		{
-			Block_Bit = LSH_GET_HASHBYTE(algtype) * 8;
+			Block_Bit = LSH_GET_HASHBYTE(ctx->setting.drbgtype) * 8;
 			seed_bits = 440;
 			STATE_MAX_SIZE = STATE_MAX_SIZE_256;
 		}
@@ -157,7 +157,7 @@ lsh_err drbg_lsh_inner_output_gen(lsh_u8 *input, lsh_type algtype, lsh_u8 *outpu
 	{
 		operation_add(hash_data, STATE_MAX_SIZE, 0, i);
 
-		result = lsh_digest(algtype, hash_data, STATE_MAX_SIZE * 8, hash_result[i]);
+		result = lsh_digest(ctx->setting.drbgtype, hash_data, STATE_MAX_SIZE * 8, hash_result[i]);
 	}
 
 	w = 0;
@@ -177,7 +177,7 @@ lsh_err drbg_lsh_inner_output_gen(lsh_u8 *input, lsh_type algtype, lsh_u8 *outpu
 }
 
 
-lsh_err drbg_lsh_init(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_u8 *entropy, int ent_size, const lsh_u8 *nonce, int non_size, const lsh_u8 *per_string, int per_size, FILE *outf)
+lsh_err drbg_lsh_init(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy, int ent_size, const lsh_u8 *nonce, int non_size, const lsh_u8 *per_string, int per_size, FILE *outf)
 {
 	lsh_err result;
 
@@ -188,15 +188,15 @@ lsh_err drbg_lsh_init(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_
 	int r, w, input_size;
 	int STATE_MAX_SIZE;
 
-	if(LSH_IS_LSH256(algtype))
+	if(LSH_IS_LSH256(ctx->setting.drbgtype))
 	{
 		target_state_V = ctx->working_state_V256;
 		target_state_C = ctx->working_state_C256;
 		STATE_MAX_SIZE = STATE_MAX_SIZE_256;
 	}
-	else if(LSH_IS_LSH512(algtype))
+	else if(LSH_IS_LSH512(ctx->setting.drbgtype))
 	{
-		if(algtype == LSH_TYPE_384 || algtype == LSH_TYPE_512)
+		if(ctx->setting.drbgtype == LSH_TYPE_384 || ctx->setting.drbgtype == LSH_TYPE_512)
 		{
 			target_state_V = ctx->working_state_V512;
 			target_state_C = ctx->working_state_C512;
@@ -220,7 +220,7 @@ lsh_err drbg_lsh_init(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_
 		input[w++] = per_string[r];
 	input_size = ent_size + non_size + per_size;
 
-	result = drbg_derivation_func(ctx, algtype, input, input_size, target_state_V);
+	result = drbg_derivation_func(ctx, input, input_size, target_state_V);
 	if (result != LSH_SUCCESS)
 		return result;
 
@@ -240,7 +240,7 @@ lsh_err drbg_lsh_init(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_
 	for(r = 0, w = 1 ; r < STATE_MAX_SIZE ; r++)
 		input[w++] = target_state_V[r];
 
-	result = drbg_derivation_func(ctx, algtype, input, STATE_MAX_SIZE + 1, target_state_C);
+	result = drbg_derivation_func(ctx, input, STATE_MAX_SIZE + 1, target_state_C);
 	if (result != LSH_SUCCESS)
 			return result;
 
@@ -260,7 +260,7 @@ lsh_err drbg_lsh_init(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_
 }
 
 
-lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_u8 *entropy, int ent_size, const lsh_u8 *add_input, int add_size, FILE *outf)
+lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy, int ent_size, const lsh_u8 *add_input, int add_size, FILE *outf)
 {
 	lsh_err result;
 
@@ -271,15 +271,15 @@ lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, lsh_type algtype, const ls
 	int r, w, input_size;
 	int STATE_MAX_SIZE;
 
-	if(LSH_IS_LSH256(algtype))
+	if(LSH_IS_LSH256(ctx->setting.drbgtype))
 	{
 		target_state_V = ctx->working_state_V256;
 		target_state_C = ctx->working_state_C256;
 		STATE_MAX_SIZE = STATE_MAX_SIZE_256;
 	}
-	else if(LSH_IS_LSH512(algtype))
+	else if(LSH_IS_LSH512(ctx->setting.drbgtype))
 	{
-		if(algtype == LSH_TYPE_384 || algtype == LSH_TYPE_512)
+		if(ctx->setting.drbgtype == LSH_TYPE_384 || ctx->setting.drbgtype == LSH_TYPE_512)
 		{
 			target_state_V = ctx->working_state_V512;
 			target_state_C = ctx->working_state_C512;
@@ -312,7 +312,7 @@ lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, lsh_type algtype, const ls
 		input[w++] = add_input[r];
 	input_size = STATE_MAX_SIZE + ent_size + add_size + 1;
 
-	result = drbg_derivation_func(ctx, algtype, input, input_size, target_state_V);
+	result = drbg_derivation_func(ctx, input, input_size, target_state_V);
 	if (result != LSH_SUCCESS)
 		return result;
 
@@ -333,7 +333,7 @@ lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, lsh_type algtype, const ls
 	for(r = 0, w = 1 ; r < STATE_MAX_SIZE ; r++)
 		input[w++] = target_state_V[r];
 
-	result = drbg_derivation_func(ctx, algtype, input, STATE_MAX_SIZE + 1, target_state_C);
+	result = drbg_derivation_func(ctx, input, STATE_MAX_SIZE + 1, target_state_C);
 	if (result != LSH_SUCCESS)
 		return result;
 
@@ -349,6 +349,7 @@ lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, lsh_type algtype, const ls
 	}
 
 	ctx->reseed_counter = 1;
+	ctx->setting.usingaddinput = false;
 
 	{		//***** TEXT OUTPUT - reseed_counter *****//
 		fprintf(outf, "reseed_counter = %d\n\n", ctx->reseed_counter);
@@ -358,7 +359,7 @@ lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, lsh_type algtype, const ls
 }
 
 
-lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, const lsh_u8 *entropy, int ent_size, const lsh_u8 *add_input, int add_size, int output_bits, int cycle, lsh_u8 *drbg, FILE *outf)
+lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy, int ent_size, const lsh_u8 *add_input, int add_size, int output_bits, int cycle, lsh_u8 *drbg, FILE *outf)
 {
 	lsh_err result;
 
@@ -373,15 +374,15 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 
 	static int counter = 1;
 
-	if(LSH_IS_LSH256(algtype))
+	if(LSH_IS_LSH256(ctx->setting.drbgtype))
 	{
 		target_state_V = ctx->working_state_V256;
 		target_state_C = ctx->working_state_C256;
 		STATE_MAX_SIZE = STATE_MAX_SIZE_256;
 	}
-	else if(LSH_IS_LSH512(algtype))
+	else if(LSH_IS_LSH512(ctx->setting.drbgtype))
 	{
-		if(algtype == LSH_TYPE_384 || algtype == LSH_TYPE_512)
+		if(ctx->setting.drbgtype == LSH_TYPE_384 || ctx->setting.drbgtype == LSH_TYPE_512)
 		{
 			target_state_V = ctx->working_state_V512;
 			target_state_C = ctx->working_state_C512;
@@ -416,9 +417,9 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 	}
 
 
-	if(ctx->reseed_counter > cycle)
+	if(ctx->reseed_counter > ctx->setting.refreshperiod || ctx->setting.usingaddinput == false)
 	{
-		result = drbg_lsh_reseed(ctx, algtype, entropy, ent_size, add_input, add_size, outf);
+		result = drbg_lsh_reseed(ctx, entropy, ent_size, add_input, add_size, outf);
 		if (result != LSH_SUCCESS)
 			return result;
 	}
@@ -432,16 +433,16 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 			hash_data[w++] = add_input[r];
 		hash_data_size = STATE_MAX_SIZE + add_size + 1;
 
-		result = lsh_digest(algtype, hash_data, hash_data_size * 8, hash_result);
+		result = lsh_digest(ctx->setting.drbgtype, hash_data, hash_data_size * 8, hash_result);
 		if (result != LSH_SUCCESS)
 			return result;
 
-		for(int i = LSH_GET_HASHBYTE(algtype) - 1, start = 0 ; i > -1 ; i--)
+		for(int i = LSH_GET_HASHBYTE(ctx->setting.drbgtype) - 1, start = 0 ; i > -1 ; i--)
 			operation_add(target_state_V, STATE_MAX_SIZE, start++, hash_result[i]);
 
 		{		//***** TEXT OUTPUT - w(hash) V *****//
 			fprintf(outf, "w = ");
-			for(int i = 0 ; i < LSH_GET_HASHBYTE(algtype) ; i++)
+			for(int i = 0 ; i < LSH_GET_HASHBYTE(ctx->setting.drbgtype) ; i++)
 				fprintf(outf, "%02x", hash_result[i]);
 			fprintf(outf, "\n");
 			fprintf(outf, "V = ");
@@ -451,7 +452,7 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 		}
 	}
 
-	result = drbg_lsh_inner_output_gen(target_state_V, algtype, drbg, output_bits, outf);
+	result = drbg_lsh_inner_output_gen(ctx, target_state_V, drbg, output_bits, outf);
 
 	{		//***** TEXT OUTPUT - output(count) *****//
 		printf("output%d = ", counter); // console output
@@ -470,11 +471,11 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 		hash_data[w++] = target_state_V[r];
 	hash_data_size = STATE_MAX_SIZE + 1;
 
-	result = lsh_digest(algtype, hash_data, hash_data_size * 8, hash_result);
+	result = lsh_digest(ctx->setting.drbgtype, hash_data, hash_data_size * 8, hash_result);
 	if (result != LSH_SUCCESS)
 		return result;
 
-	for(int i = LSH_GET_HASHBYTE(algtype) - 1, start = 0 ; i > -1 ; i--)
+	for(int i = LSH_GET_HASHBYTE(ctx->setting.drbgtype) - 1, start = 0 ; i > -1 ; i--)
 		operation_add(target_state_V, STATE_MAX_SIZE, start++, hash_result[i]);
 
 	for(int i = STATE_MAX_SIZE - 1, start = 0 ; i > -1 ; i--)
@@ -484,7 +485,7 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, lsh_type algtype, cons
 
 	{		//***** TEXT OUTPUT - w(hash) V (after inner reseed) *****//
 		fprintf(outf, "w = ");
-		for(int i = 0 ; i < LSH_GET_HASHBYTE(algtype) ; i++)
+		for(int i = 0 ; i < LSH_GET_HASHBYTE(ctx->setting.drbgtype) ; i++)
 			fprintf(outf, "%02x", hash_result[i]);
 		fprintf(outf, "\n");
 		fprintf(outf, "V = ");
@@ -508,13 +509,25 @@ lsh_err drbg_lsh_digest(lsh_type algtype, lsh_u8 (*entropy)[64], int ent_size, l
 	struct DRBG_LSH_Context ctx;
 	int result;
 
-	result = drbg_lsh_init(&ctx, algtype, entropy[0], ent_size, nonce, non_size, per_string, per_size, outf);
+	ctx.setting.drbgtype = algtype;
+	ctx.setting.refreshperiod = cycle;
+	if(per_size != 0)
+		ctx.setting.usingperstring = true;
+	else
+		ctx.setting.usingperstring = false;
+
+	if(add_size != 0)
+		ctx.setting.usingaddinput = true;
+	else
+		ctx.setting.usingaddinput = false;
+
+	result = drbg_lsh_init(&ctx, entropy[0], ent_size, nonce, non_size, per_string, per_size, outf);
 	if (result != LSH_SUCCESS)
 		return result;
 
-	for(int i = 0 ; i < cycle + 1 ; i++)
+	for(int i = 0 ; i < ctx.setting.refreshperiod + 1 ; i++)
 	{
-		result = drbg_lsh_output_gen(&ctx, algtype, entropy[i], ent_size, add_input[i], add_size, output_bits, cycle, drbg, outf);
+		result = drbg_lsh_output_gen(&ctx, entropy[i], ent_size, add_input[i], add_size, output_bits, cycle, drbg, outf);
 		if (result != LSH_SUCCESS)
 			return result;
 	}

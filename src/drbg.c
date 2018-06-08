@@ -31,8 +31,8 @@ lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, const lsh_u8 *data, i
 	lsh_uint Seed_Bit;
 	lsh_uint len_seed;
 
-	lsh_u8 hash_data[1024] = {'\0', };
-	lsh_u8 hash_result[3][LSH512_HASH_VAL_MAX_BYTE_LEN];
+	lsh_u8 hash_data[512] = {'\0', };
+	lsh_u8 hash_result[3][LSH512_HASH_VAL_MAX_BYTE_LEN] = {'\0',};
 
 	int r, w = 0;
 	int flag = 0;
@@ -43,7 +43,7 @@ lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, const lsh_u8 *data, i
 
 	if(LSH_IS_LSH256(ctx->setting.drbgtype))
 	{
-		Block_Bit = LSH_GET_HASHBYTE(ctx->setting.drbgtype) * 8;
+		Block_Bit = LSH_GET_HASHBIT(ctx->setting.drbgtype);
 		Seed_Bit = 440;
 		hash_data[1] = 0x00;
 		hash_data[2] = 0x00;
@@ -55,7 +55,7 @@ lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, const lsh_u8 *data, i
 	{
 		if(ctx->setting.drbgtype == LSH_TYPE_384 || ctx->setting.drbgtype == LSH_TYPE_512)
 		{
-			Block_Bit = LSH_GET_HASHBYTE(ctx->setting.drbgtype) * 8;
+			Block_Bit = LSH_GET_HASHBIT(ctx->setting.drbgtype);
 			Seed_Bit = 888;
 			hash_data[1] = 0x00;
 			hash_data[2] = 0x00;
@@ -65,7 +65,7 @@ lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, const lsh_u8 *data, i
 		}
 		else
 		{
-			Block_Bit = LSH_GET_HASHBYTE(ctx->setting.drbgtype) * 8;
+			Block_Bit = LSH_GET_HASHBIT(ctx->setting.drbgtype);
 			Seed_Bit = 440;
 			hash_data[1] = 0x00;
 			hash_data[2] = 0x00;
@@ -76,15 +76,17 @@ lsh_err drbg_derivation_func(struct DRBG_LSH_Context *ctx, const lsh_u8 *data, i
 	}
 	len_seed = ceil((double)Seed_Bit / (double)Block_Bit);
 
+	hash_data[0] = 1;	// counter
+
 	for(int i = 0 ; i < len_seed ; i++)
 	{
-		hash_data[0] = i + 1;	// counter
-
 		w = 5;
 		if(!i) {
 			for(r = 0; r < data_size ; r++)
 				hash_data[w++] = data[r];
 		}
+		else
+			hash_data[0]++;
 
 		result = lsh_digest(ctx->setting.drbgtype, hash_data, (5 + data_size) * 8, hash_result[i]);
 	}
@@ -230,6 +232,7 @@ lsh_err drbg_lsh_init(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy, int e
 		return result;
 
 	{		//***** TEXT OUTPUT - V *****//
+		fprintf(outf, "init \n");
 		fprintf(outf, "dfInput = ");
 		for(int i = 0 ; i < input_size ; i++)
 			fprintf(outf, "%02x", input[i]);
@@ -408,6 +411,7 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy,
 
 	{		//***** TEXT OUTPUT - V C reseed_counter addInput *****//
 		fprintf(outf, "\n\n");
+		fprintf(outf, "%d reseed \n", ctx->reseed_counter);
 		fprintf(outf, "V = ");
 		for(int i = 0 ; i < STATE_MAX_SIZE ; i++)
 			fprintf(outf, "%02x", target_state_V[i]);
@@ -439,6 +443,7 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy,
 	}
 	else if(ctx->setting.usingaddinput)
 	{	// ****** inner reseed ****** //
+		printf("inner \n");
 		hash_data[0] = 0x02;
 		for(r = 0 , w = 1 ; r < STATE_MAX_SIZE ; r++)
 			hash_data[w++] = target_state_V[r];
@@ -469,6 +474,7 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy,
 	result = drbg_lsh_inner_output_gen(ctx, target_state_V, drbg, output_bits, outf);
 
 	{		//***** TEXT OUTPUT - output(count) *****//
+		fprintf(outf, "%d gen \n", ctx->reseed_counter);
 		printf("output%d = ", counter); // console output
 		fprintf(outf, "output%d = ", counter++);
 		for(int i = 0 ; i < output_bits / 8 ; i++)
@@ -497,6 +503,8 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy,
 
 	operation_add(target_state_V, STATE_MAX_SIZE, 0, ctx->reseed_counter);
 
+	ctx->reseed_counter += 1;
+
 	{		//***** TEXT OUTPUT - w(hash) V (after inner reseed) *****//
 		fprintf(outf, "w = ");
 		for(int i = 0 ; i < LSH_GET_HASHBYTE(ctx->setting.drbgtype) ; i++)
@@ -506,9 +514,12 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy,
 		for(int i = 0 ; i < STATE_MAX_SIZE ; i++)
 			fprintf(outf, "%02x", target_state_V[i]);
 		fprintf(outf, "\n");
-	}
 
-	ctx->reseed_counter += 1;
+		fprintf(outf, "C = ");		// TEMP TEXT OUTPUT//
+		for(int i = 0 ; i < STATE_MAX_SIZE ; i++)
+			fprintf(outf, "%02x", target_state_C[i]);
+		fprintf(outf, "\n");
+	}
 
 	{		//***** TEXT OUTPUT - reseed_counter *****//
 		fprintf(outf, "reseed_counter = %d", ctx->reseed_counter);
@@ -544,7 +555,11 @@ lsh_err drbg_lsh_digest(lsh_type algtype, lsh_u8 (*entropy)[64], int ent_size, l
 
 	for(int i = 0 ; i < ctx.setting.refreshperiod + 1 ; i++)
 	{
-		result = drbg_lsh_output_gen(&ctx, entropy[i], ent_size, add_input[i], add_size, output_bits, cycle, drbg, outf);
+		if(ctx.setting.predicttolerance)
+			result = drbg_lsh_output_gen(&ctx, entropy[i+1], ent_size, add_input[i], add_size, output_bits, cycle, drbg, outf);
+		else
+			result = drbg_lsh_output_gen(&ctx, entropy[i], ent_size, add_input[i], add_size, output_bits, cycle, drbg, outf);
+
 		if (result != LSH_SUCCESS)
 			return result;
 	}

@@ -555,9 +555,50 @@ void drbg_lsh_test_drive()
 	fclose(output_file);
 }
 
+void lsh_simple_test()
+{
+	FILE *input_file;
+	lsh_u8 data[256];
+	lsh_u8 hex_data[128];
+	int data_len;
+	int hex_len;
+
+	lsh_u8 hash[LSH512_HASH_VAL_MAX_BYTE_LEN];
+	lsh_err result;
+	lsh_type algtype = LSH_TYPE_256_256;
+
+	input_file = fopen("Hash_test/input.txt", "r");
+	fgets(data, MAX_READ_LEN, input_file);	// skip two lines
+
+	data_len = strlen(data);	// calculate key length
+	hex_len = data_len / 2;
+
+	for(int r = 0, w = 0 ; r < data_len ; r += 2)
+	{
+		lsh_u8 str_to_hex[3] = {data[r], data[r+1], '\0'};
+		hex_data[w++] = strtol(str_to_hex, NULL, 16);
+	}
+
+	result = lsh_digest(algtype, hex_data, hex_len * 8, hash);
+
+	printf("Hash input: ");
+	for(int i = 0 ; i < hex_len ; i++)
+		printf("%02x", hex_data[i]);
+	printf("\n");
+
+	printf("input size: %d \n", hex_len);
+
+	printf("Hash output: ");
+	for(int i = 0 ; i < LSH_GET_HASHBYTE(algtype) ; i++)
+		printf("%02x", hash[i]);
+	printf("\n");
+
+}
+
 int main()
 {
 	//lsh_test_drive();
+	//lsh_simple_test();
 	//hmac_lsh_test_type2();
 	drbg_lsh_test_drive();
 

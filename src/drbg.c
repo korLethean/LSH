@@ -219,7 +219,7 @@ lsh_err drbg_lsh_init(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy, int e
 	for(r = 0 ; r < non_size ; r++)
 		input[w++] = nonce[r];
 
-	if(ctx->setting.usingperstring)
+	if(ctx->setting.using_perstring)
 	{
 		for(r = 0 ; r < per_size ; r++)
 			input[w++] = per_string[r];
@@ -232,7 +232,6 @@ lsh_err drbg_lsh_init(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy, int e
 		return result;
 
 	{		//***** TEXT OUTPUT - V *****//
-		fprintf(outf, "init \n");
 		fprintf(outf, "dfInput = ");
 		for(int i = 0 ; i < input_size ; i++)
 			fprintf(outf, "%02x", input[i]);
@@ -317,7 +316,7 @@ lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy, int
 	for(r = 0 ; r < ent_size ; r++)
 		input[w++] = entropy[r];
 
-	if(ctx->setting.usingaddinput)
+	if(ctx->setting.using_addinput)
 	{
 		for(r = 0 ; r < add_size ; r++)
 			input[w++] = add_input[r];
@@ -362,7 +361,8 @@ lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy, int
 	}
 
 	ctx->reseed_counter = 1;
-	ctx->setting.usingaddinput = false;
+	if(!ctx->setting.prediction_resistance)
+		ctx->setting.using_addinput = false;
 
 	{		//***** TEXT OUTPUT - reseed_counter *****//
 		fprintf(outf, "reseed_counter = %d\n\n", ctx->reseed_counter);
@@ -411,7 +411,6 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy,
 
 	{		//***** TEXT OUTPUT - V C reseed_counter addInput *****//
 		fprintf(outf, "\n\n");
-		fprintf(outf, "%d reseed \n", ctx->reseed_counter);
 		fprintf(outf, "V = ");
 		for(int i = 0 ; i < STATE_MAX_SIZE ; i++)
 			fprintf(outf, "%02x", target_state_V[i]);
@@ -424,7 +423,7 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy,
 
 		fprintf(outf, "reseed_counter = %d \n", ctx->reseed_counter);
 
-		if(ctx->setting.usingaddinput)
+		if(ctx->setting.using_addinput)
 		{
 			fprintf(outf, "addInput = ");
 			for(int i = 0 ; i < add_size ; i++)
@@ -435,15 +434,14 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy,
 	}
 
 
-	if(ctx->reseed_counter > ctx->setting.refreshperiod || ctx->setting.predicttolerance)
+	if(ctx->reseed_counter > ctx->setting.refresh_period || ctx->setting.prediction_resistance)
 	{
 		result = drbg_lsh_reseed(ctx, entropy, ent_size, add_input, add_size, outf);
 		if (result != LSH_SUCCESS)
 			return result;
 	}
-	else if(ctx->setting.usingaddinput)
+	else if(ctx->setting.using_addinput)
 	{	// ****** inner reseed ****** //
-		printf("inner \n");
 		hash_data[0] = 0x02;
 		for(r = 0 , w = 1 ; r < STATE_MAX_SIZE ; r++)
 			hash_data[w++] = target_state_V[r];
@@ -474,7 +472,6 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy,
 	result = drbg_lsh_inner_output_gen(ctx, target_state_V, drbg, output_bits, outf);
 
 	{		//***** TEXT OUTPUT - output(count) *****//
-		fprintf(outf, "%d gen \n", ctx->reseed_counter);
 		printf("output%d = ", counter); // console output
 		fprintf(outf, "output%d = ", counter++);
 		for(int i = 0 ; i < output_bits / 8 ; i++)
@@ -514,11 +511,6 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy,
 		for(int i = 0 ; i < STATE_MAX_SIZE ; i++)
 			fprintf(outf, "%02x", target_state_V[i]);
 		fprintf(outf, "\n");
-
-		fprintf(outf, "C = ");		// TEMP TEXT OUTPUT//
-		for(int i = 0 ; i < STATE_MAX_SIZE ; i++)
-			fprintf(outf, "%02x", target_state_C[i]);
-		fprintf(outf, "\n");
 	}
 
 	{		//***** TEXT OUTPUT - reseed_counter *****//
@@ -535,27 +527,32 @@ lsh_err drbg_lsh_digest(lsh_type algtype, lsh_u8 (*entropy)[64], int ent_size, l
 	int result;
 
 	ctx.setting.drbgtype = algtype;
-	ctx.setting.refreshperiod = cycle;
+	ctx.setting.refresh_period = cycle;
 
-	if(per_size != 0)
-		ctx.setting.usingperstring = true;
+	ctx.setting.prediction_resistance = true;	//예측내성
+	ctx.setting.using_perstring = true;		//개별화
+	ctx.setting.using_addinput = true;		//추가입력
+
+
+/*	if(per_size != 0)
+		ctx.setting.using_perstring = true;
 	else
-		ctx.setting.usingperstring = false;
+		ctx.setting.using_perstring = false;
 
 	if(add_size != 0)
-		ctx.setting.usingaddinput = true;
+		ctx.setting.using_addinput = true;
 	else
-		ctx.setting.usingaddinput = false;
+		ctx.setting.using_addinput = false;
 
-	ctx.setting.predicttolerance = false;
+	ctx.setting.prediction_resistance = false;*/
 
 	result = drbg_lsh_init(&ctx, entropy[0], ent_size, nonce, non_size, per_string, per_size, outf);
 	if (result != LSH_SUCCESS)
 		return result;
 
-	for(int i = 0 ; i < ctx.setting.refreshperiod + 1 ; i++)
+	for(int i = 0 ; i < ctx.setting.refresh_period + 1 ; i++)
 	{
-		if(ctx.setting.predicttolerance)
+		if(ctx.setting.prediction_resistance || ctx.setting.refresh_period == 0)
 			result = drbg_lsh_output_gen(&ctx, entropy[i+1], ent_size, add_input[i], add_size, output_bits, cycle, drbg, outf);
 		else
 			result = drbg_lsh_output_gen(&ctx, entropy[i], ent_size, add_input[i], add_size, output_bits, cycle, drbg, outf);

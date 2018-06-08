@@ -16,17 +16,17 @@ extern "C" {
 /**
  * DRBG 설정 정보
  * drbgtype 난수발생기, 기반암호 알고리즘
- * refreshperiod 상태 갱신주기
- * predicttolerance 예측내성 활성화 여부
- * usingperstring 개별화 문자열 사용 여부
- * usingaddinput 추가 입력 사용 여부
+ * refresh_period 상태 갱신주기
+ * prediction_resistance 예측내성 활성화 여부
+ * using_perstring 개별화 문자열 사용 여부
+ * using_addinput 추가 입력 사용 여부
  */
 struct DRBG_Administrative {
 	lsh_type drbgtype;
-	lsh_uint refreshperiod;
-	bool predicttolerance;
-	bool usingperstring;
-	bool usingaddinput;
+	lsh_uint refresh_period;
+	bool prediction_resistance;
+	bool using_perstring;
+	bool using_addinput;
 };
 
 

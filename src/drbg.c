@@ -1,7 +1,7 @@
 #include <string.h>
 #include "../include/drbg.h"
 
-void operation_add(unsigned char *arr, int ary_size, int start_index, unsigned int num)
+void drbg_operation_add(unsigned char *arr, int ary_size, int start_index, unsigned int num)
 {
 	unsigned int current;
 	unsigned int carry = 0;
@@ -157,7 +157,7 @@ lsh_err drbg_lsh_inner_output_gen(struct DRBG_LSH_Context *ctx, lsh_u8 *input, l
 
 	for(int i = 0 ; i < (int) n ; i++)
 	{
-		operation_add(hash_data, STATE_MAX_SIZE, 0, i);
+		drbg_operation_add(hash_data, STATE_MAX_SIZE, 0, i);
 
 		result = lsh_digest(ctx->setting.drbgtype, hash_data, STATE_MAX_SIZE * 8, hash_result[i]);
 	}
@@ -455,7 +455,7 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy,
 			return result;
 
 		for(int i = LSH_GET_HASHBYTE(ctx->setting.drbgtype) - 1, start = 0 ; i > -1 ; i--)
-			operation_add(target_state_V, STATE_MAX_SIZE, start++, hash_result[i]);
+			drbg_operation_add(target_state_V, STATE_MAX_SIZE, start++, hash_result[i]);
 
 		{		//***** TEXT OUTPUT - w(hash) V *****//
 			fprintf(outf, "w = ");
@@ -493,12 +493,12 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy,
 		return result;
 
 	for(int i = LSH_GET_HASHBYTE(ctx->setting.drbgtype) - 1, start = 0 ; i > -1 ; i--)
-		operation_add(target_state_V, STATE_MAX_SIZE, start++, hash_result[i]);
+		drbg_operation_add(target_state_V, STATE_MAX_SIZE, start++, hash_result[i]);
 
 	for(int i = STATE_MAX_SIZE - 1, start = 0 ; i > -1 ; i--)
-		operation_add(target_state_V, STATE_MAX_SIZE, start++, target_state_C[i]);
+		drbg_operation_add(target_state_V, STATE_MAX_SIZE, start++, target_state_C[i]);
 
-	operation_add(target_state_V, STATE_MAX_SIZE, 0, ctx->reseed_counter);
+	drbg_operation_add(target_state_V, STATE_MAX_SIZE, 0, ctx->reseed_counter);
 
 	ctx->reseed_counter += 1;
 
@@ -527,11 +527,11 @@ lsh_err drbg_lsh_digest(lsh_type algtype, lsh_u8 (*entropy)[64], int ent_size, l
 	int result;
 
 	ctx.setting.drbgtype = algtype;
-	ctx.setting.refresh_period = cycle;
+	ctx.setting.refresh_period = 2;
 
-	ctx.setting.prediction_resistance = true;	//예측내성
-	ctx.setting.using_perstring = true;		//개별화
-	ctx.setting.using_addinput = true;		//추가입력
+	ctx.setting.prediction_resistance = false;	//예측내성
+	ctx.setting.using_perstring = false;		//개별화
+	ctx.setting.using_addinput = false;		//추가입력
 
 
 /*	if(per_size != 0)

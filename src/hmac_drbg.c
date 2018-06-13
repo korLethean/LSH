@@ -88,6 +88,26 @@ lsh_err hmac_drbg_lsh_update(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *da
 lsh_err hmac_drbg_lsh_reseed(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *entropy, int ent_size, const lsh_u8 *add_input, int add_size, FILE *outf)
 {
 	lsh_err result;
+	lsh_u8 seed_material[512];
+	lsh_uint seed_size = 0;
+	int w = 0;
+
+	for(int i = 0 ; i < ent_size ; i++)
+		seed_material[w++] = entropy[i];
+	seed_size += ent_size;
+
+	if(ctx->setting.using_addinput)
+	{
+		for(int i = 0 ; i < add_size ; i++)
+			seed_material[w++] = add_input[i];
+		seed_size += add_size;
+	}
+
+	result = hmac_drbg_lsh_update(ctx, seed_material, seed_size);
+	if(result != LSH_SUCCESS)
+		return result;
+
+	ctx->reseed_counter = 1;
 
 	return result;
 }
@@ -121,6 +141,8 @@ lsh_err hmac_drbg_lsh_init(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *entr
 	}
 
 	result = hmac_drbg_lsh_update(ctx, seed_material, seed_size);
+	if(result != LSH_SUCCESS)
+		return result;
 
 	ctx->reseed_counter = 1;
 

@@ -112,7 +112,7 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy,
 
 
 /**
- * init, update, final 과정을 한번에 수행하여 HMAC을 계산한다.
+ * init, update, final 과정을 한번에 수행하여 DRBG를 계산한다.
  *
  * @param [in] algtype LSH 알고리즘 명세
  * @param [in] key 키

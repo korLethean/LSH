@@ -527,12 +527,11 @@ lsh_err drbg_lsh_digest(lsh_type algtype, lsh_u8 (*entropy)[64], int ent_size, l
 	int result;
 
 	ctx.setting.drbgtype = algtype;
-	ctx.setting.refresh_period = 2;
+	ctx.setting.refresh_period = cycle;
 
 	ctx.setting.prediction_resistance = false;	//예측내성
-	ctx.setting.using_perstring = false;		//개별화
-	ctx.setting.using_addinput = false;		//추가입력
-
+	ctx.setting.using_perstring = true;		//개별화
+	ctx.setting.using_addinput = true;		//추가입력
 
 /*	if(per_size != 0)
 		ctx.setting.using_perstring = true;

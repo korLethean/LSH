@@ -22,7 +22,7 @@ void hmac_drbg_operation_add(unsigned char *arr, int ary_size, int start_index, 
     }
 }
 
-lsh_err hmac_drbg_update_func(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *data, int data_size, lsh_u8 *output)
+lsh_err hmac_drbg_lsh_update(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *data, int data_size)
 {
 	lsh_err result;
 
@@ -31,7 +31,33 @@ lsh_err hmac_drbg_update_func(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *d
 
 lsh_err hmac_drbg_lsh_init(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *entropy, int ent_size, const lsh_u8 *nonce, int non_size, const lsh_u8 *per_string, int per_size, FILE *outf)
 {
-	lsh_err result;
+	lsh_err result = LSH_SUCCESS;
+	lsh_u8 seed_material[512];
+	lsh_uint seed_size = 0;
+	int w = 0;
+
+	for(int i = 0 ; i < ent_size ; i++)
+		seed_material[w++] = entropy[i];
+	seed_size += ent_size;
+
+	for(int i = 0 ; i < non_size ; i++)
+		seed_material[w++] = nonce[i];
+	seed_size += non_size;
+
+	if(ctx->setting.using_perstring)
+	{
+		for(int i = 0 ; i < per_size ; i++)
+			seed_material[w++] = per_string[i];
+		seed_size += per_size;
+	}
+
+	for(int i = 0 ; i < ctx->output_bits / 8 ; i++)
+	{
+		ctx->working_state_Key[i] = 0;
+		ctx->working_state_V[i] = 1;
+	}
+
+	result = hmac_drbg_lsh_update(ctx, seed_material, seed_size);
 
 	return result;
 }
@@ -63,6 +89,7 @@ lsh_err hmac_drbg_lsh_digest(lsh_type algtype, lsh_u8 (*entropy)[64], int ent_si
 	ctx.setting.using_perstring = true;		//개별화
 	ctx.setting.using_addinput = true;		//추가입력
 
+
 /*	if(per_size != 0)
 		ctx.setting.using_perstring = true;
 	else
@@ -75,11 +102,11 @@ lsh_err hmac_drbg_lsh_digest(lsh_type algtype, lsh_u8 (*entropy)[64], int ent_si
 
 	ctx.setting.prediction_resistance = false;*/
 
-	/*result = drbg_lsh_init(&ctx, entropy[0], ent_size, nonce, non_size, per_string, per_size, outf);
+	result = hmac_drbg_lsh_init(&ctx, entropy[0], ent_size, nonce, non_size, per_string, per_size, outf);
 	if (result != LSH_SUCCESS)
 		return result;
 
-	for(int i = 0 ; i < ctx.setting.refresh_period + 1 ; i++)
+/*	for(int i = 0 ; i < ctx.setting.refresh_period + 1 ; i++)
 	{
 		if(ctx.setting.prediction_resistance || ctx.setting.refresh_period == 0)
 			result = drbg_lsh_output_gen(&ctx, entropy[i+1], ent_size, add_input[i], add_size, output_bits, cycle, drbg, outf);

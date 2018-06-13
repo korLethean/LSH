@@ -53,7 +53,7 @@ struct HMAC_DRBG_LSH_Context {
  *
  * @return LSH_SUCCESS 내부 상태 초기화 성공
  */
-lsh_err hmac_drbg_update_func(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *data, int data_size, lsh_u8 *output);
+lsh_err hmac_drbg_lsh_update(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *data, int data_size);
 
 
 /**

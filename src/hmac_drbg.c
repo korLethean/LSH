@@ -109,6 +109,9 @@ lsh_err hmac_drbg_lsh_reseed(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *en
 
 	ctx->reseed_counter = 1;
 
+	if(!ctx->setting.prediction_resistance)
+		ctx->setting.using_addinput = false;
+
 	return result;
 }
 
@@ -126,6 +129,18 @@ lsh_err hmac_drbg_lsh_init(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *entr
 	for(int i = 0 ; i < non_size ; i++)
 		seed_material[w++] = nonce[i];
 	seed_size += non_size;
+
+	{		//***** TEXT OUTPUT - w(hash) V (after inner reseed) *****//
+		fprintf(outf, "K = ");
+		for(int i = 0 ; i < ctx->output_bits; i++)
+			fprintf(outf, "%02x", ctx->working_state_Key[i]);
+		fprintf(outf, "\n");
+		fprintf(outf, "V = ");
+		for(int i = 0 ; i < ctx->output_bits; i++)
+			fprintf(outf, "%02x", ctx->working_state_V[i]);
+		fprintf(outf, "\n");
+	}
+
 
 	if(ctx->setting.using_perstring)
 	{
@@ -152,6 +167,52 @@ lsh_err hmac_drbg_lsh_init(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *entr
 lsh_err hmac_drbg_lsh_output_gen(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *entropy, int ent_size, const lsh_u8 *add_input, int add_size, int cycle, lsh_u8 *drbg, FILE *outf)
 {
 	lsh_err result;
+	double n;
+	lsh_u8 hmac_result[3][LSH512_HASH_VAL_MAX_BYTE_LEN];
+	int flag = 0, w = 0;
+
+	int output_index = ctx->output_bits * 2 / 8;
+
+
+	if(ctx->reseed_counter > ctx->setting.refresh_period || ctx->setting.prediction_resistance)
+	{
+		result = hmac_drbg_lsh_reseed(ctx, entropy, ent_size, add_input, add_size, outf);
+		if(result != LSH_SUCCESS)
+			return result;
+	}
+	else if(ctx->setting.using_addinput)
+	{
+		result = hmac_drbg_lsh_update(ctx, add_input, add_size);
+		if(result != LSH_SUCCESS)
+			return result;
+	}
+
+	n = ceil((double) ctx->output_bits * 2 / (double) ctx->output_bits);
+
+	for(int i = 0 ; i < (int) n ; i++)
+	{
+		result = hmac_lsh_digest(ctx->setting.drbgtype, ctx->working_state_Key, ctx->output_bits / 8, ctx->working_state_V, ctx->output_bits / 8, hmac_result[i]);
+		if(result != LSH_SUCCESS)
+			return result;
+	}
+
+	for(int i = 0 ; i < output_index ; i++)
+	{
+		if(i == ctx->output_bits / 8)
+		{
+			flag += 1;
+			output_index -= ctx->output_bits / 8;
+			i = 0;
+		}
+
+		drbg[w++] = hmac_result[flag][i];
+	}
+
+	result = hmac_drbg_lsh_update(ctx, add_input, add_size);
+	if(result != LSH_SUCCESS)
+		return result;
+
+	ctx->reseed_counter += 1;
 
 	return result;
 }
@@ -186,16 +247,16 @@ lsh_err hmac_drbg_lsh_digest(lsh_type algtype, lsh_u8 (*entropy)[64], int ent_si
 	if (result != LSH_SUCCESS)
 		return result;
 
-/*	for(int i = 0 ; i < ctx.setting.refresh_period + 1 ; i++)
+	for(int i = 0 ; i < ctx.setting.refresh_period + 1 ; i++)
 	{
 		if(ctx.setting.prediction_resistance || ctx.setting.refresh_period == 0)
-			result = drbg_lsh_output_gen(&ctx, entropy[i+1], ent_size, add_input[i], add_size, output_bits, cycle, drbg, outf);
+			result = hmac_drbg_lsh_output_gen(&ctx, entropy[i+1], ent_size, add_input[i], add_size, cycle, drbg, outf);
 		else
-			result = drbg_lsh_output_gen(&ctx, entropy[i], ent_size, add_input[i], add_size, output_bits, cycle, drbg, outf);
+			result = hmac_drbg_lsh_output_gen(&ctx, entropy[i], ent_size, add_input[i], add_size, cycle, drbg, outf);
 
 		if (result != LSH_SUCCESS)
 			return result;
-	}*/
+	}
 
 	return result;
 }

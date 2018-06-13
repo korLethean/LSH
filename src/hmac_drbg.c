@@ -1,4 +1,5 @@
 #include <string.h>
+#include "../include/hmac.h"
 #include "../include/hmac_drbg.h"
 
 void hmac_drbg_operation_add(unsigned char *arr, int ary_size, int start_index, unsigned int num)
@@ -25,13 +26,75 @@ void hmac_drbg_operation_add(unsigned char *arr, int ary_size, int start_index, 
 lsh_err hmac_drbg_lsh_update(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *data, int data_size)
 {
 	lsh_err result;
+	lsh_u8 input_data[512];
+	lsh_uint input_data_size = 0;
+	int w = 0;
+
+	for(int i = 0 ; i < ctx->output_bits / 8 ; i++)
+		input_data[w++] = ctx->working_state_V[i];
+	input_data_size += ctx->output_bits / 8;
+
+	input_data[w++] = 0;
+	input_data_size += 1;
+
+	if(data_size)
+	{
+		for(int i = 0 ; i < data_size ; i++)
+			input_data[w++] = data[i];
+		input_data_size += data_size;
+	}
+
+	// Calculate Key
+	result = hmac_lsh_digest(ctx->setting.drbgtype, ctx->working_state_Key, ctx->output_bits / 8, input_data, input_data_size, ctx->working_state_Key);
+	if(result != LSH_SUCCESS)
+		return result;
+
+	for(int i = 0 ; i < ctx->output_bits / 8 ; i++)
+		printf("%02x", ctx->working_state_Key[i]);
+	printf("\n");
+	// Calculate V
+	hmac_lsh_digest(ctx->setting.drbgtype, ctx->working_state_Key, ctx->output_bits / 8, ctx->working_state_V, ctx->output_bits / 8, ctx->working_state_V);
+	if(result != LSH_SUCCESS)
+			return result;
+
+	for(int i = 0 ; i < ctx->output_bits / 8 ; i++)
+		printf("%02x", ctx->working_state_V[i]);
+	printf("\n");
+
+	if(data_size)
+	{
+		w = 0;
+
+		for(int i = 0 ; i < ctx->output_bits / 8 ; i++)
+			input_data[w++] = ctx->working_state_V[i];
+
+		input_data[w++] = 1;
+
+		for(int i = 0 ; i < data_size ; i++)
+			input_data[w++] = data[i];
+
+		result = hmac_lsh_digest(ctx->setting.drbgtype, ctx->working_state_Key, ctx->output_bits / 8, input_data, input_data_size, ctx->working_state_Key);
+		if(result != LSH_SUCCESS)
+				return result;
+
+		result = hmac_lsh_digest(ctx->setting.drbgtype, ctx->working_state_Key, ctx->output_bits / 8, ctx->working_state_V, ctx->output_bits / 8, ctx->working_state_V);
+		if(result != LSH_SUCCESS)
+				return result;
+	}
+
+	return result;
+}
+
+lsh_err hmac_drbg_lsh_reseed(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *entropy, int ent_size, const lsh_u8 *add_input, int add_size, FILE *outf)
+{
+	lsh_err result;
 
 	return result;
 }
 
 lsh_err hmac_drbg_lsh_init(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *entropy, int ent_size, const lsh_u8 *nonce, int non_size, const lsh_u8 *per_string, int per_size, FILE *outf)
 {
-	lsh_err result = LSH_SUCCESS;
+	lsh_err result;
 	lsh_u8 seed_material[512];
 	lsh_uint seed_size = 0;
 	int w = 0;
@@ -59,12 +122,7 @@ lsh_err hmac_drbg_lsh_init(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *entr
 
 	result = hmac_drbg_lsh_update(ctx, seed_material, seed_size);
 
-	return result;
-}
-
-lsh_err hmac_drbg_lsh_reseed(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *entropy, int ent_size, const lsh_u8 *add_input, int add_size, FILE *outf)
-{
-	lsh_err result;
+	ctx->reseed_counter = 1;
 
 	return result;
 }
@@ -81,7 +139,7 @@ lsh_err hmac_drbg_lsh_digest(lsh_type algtype, lsh_u8 (*entropy)[64], int ent_si
 	struct HMAC_DRBG_LSH_Context ctx;
 	int result;
 
-	ctx.output_bits = output_bits;
+	ctx.output_bits = output_bits / 2;
 	ctx.setting.drbgtype = algtype;
 	ctx.setting.refresh_period = cycle;
 

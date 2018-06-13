@@ -10,8 +10,7 @@
 extern "C" {
 #endif
 
-#define STATE_MAX_SIZE_256 55
-#define STATE_MAX_SIZE_512 111
+#define STATE_MAX_SIZE 128
 
 /**
  * DRBG 설정 정보
@@ -31,13 +30,13 @@ struct HMAC_DRBG_Administrative {
 
 
 /**
- * DRBG 계산을 위한 내부 상태 구조체
+ * HMAC DRBG 계산을 위한 내부 상태 구조체
  */
 struct HMAC_DRBG_LSH_Context {
 	union LSH_Context drbg_ctx;
 	struct HMAC_DRBG_Administrative setting;
-	lsh_u8 working_state_V[STATE_MAX_SIZE_512];
-	lsh_u8 working_state_Key[STATE_MAX_SIZE_512];
+	lsh_u8 working_state_V[STATE_MAX_SIZE];
+	lsh_u8 working_state_Key[STATE_MAX_SIZE];
 	int reseed_counter;
 	int output_bits;
 };

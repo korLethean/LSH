@@ -563,7 +563,7 @@ void hmac_drbg_lsh_test_drive()
 	char input_file_name[MAX_FILE_NAME_LEN], output_file_name[MAX_FILE_NAME_LEN];
 	lsh_u8 read_line[MAX_DATA_LEN];
 
-	lsh_u8 drbg_result[LSH512_HASH_VAL_MAX_BYTE_LEN];
+	lsh_u8 hmac_drbg_result[128];
 
 	lsh_type algtype;
 	lsh_u8 entropy[3][64];
@@ -583,6 +583,7 @@ void hmac_drbg_lsh_test_drive()
 
 	sprintf(output_file_name, "HMAC_DRBG_test/HMAC_DRBG_LSH-256-256(no PR)_rsp.txt");
 	output_file = fopen(output_file_name, "w");
+	fprintf(output_file, "Algo_ID = HMAC_DRBG_LSH-256_256 \n\n");
 
 	printf("test data from: %s \n", input_file_name);
 
@@ -641,7 +642,7 @@ void hmac_drbg_lsh_test_drive()
 			add_input[1][w++] = strtol(str_to_hex, NULL, 16);
 		}
 
-		fprintf(output_file, "Algo_ID = Hash_DRBG_LSH-256_256 \n\n");	//output text
+		//output text
 		fprintf(output_file, "entropy = ");
 		for(int i = 0 ; i < entropy_size ; i++)
 			fprintf(output_file, "%02x", entropy[0][i]);
@@ -656,7 +657,7 @@ void hmac_drbg_lsh_test_drive()
 		fprintf(output_file, "\n\n");
 
 
-		hmac_drbg_lsh_digest(algtype, entropy, entropy_size, nonce, nonce_size, per_string, per_size, add_input, add_size, output_bits, reseed_cycle, drbg_result, output_file);
+		hmac_drbg_lsh_digest(algtype, entropy, entropy_size, nonce, nonce_size, per_string, per_size, add_input, add_size, output_bits, reseed_cycle, hmac_drbg_result, output_file);
 	}
 	else
 	{

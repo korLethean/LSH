@@ -1,7 +1,7 @@
 #include <string.h>
 #include "../include/drbg.h"
 
-void drbg_operation_add(unsigned char *arr, int ary_size, int start_index, unsigned int num)
+void operation_add(unsigned char *arr, int ary_size, int start_index, unsigned int num)
 {
 	unsigned int current;
 	unsigned int carry = 0;
@@ -157,7 +157,7 @@ lsh_err drbg_lsh_inner_output_gen(struct DRBG_LSH_Context *ctx, lsh_u8 *input, l
 
 	for(int i = 0 ; i < (int) n ; i++)
 	{
-		drbg_operation_add(hash_data, STATE_MAX_SIZE, 0, i);
+		operation_add(hash_data, STATE_MAX_SIZE, 0, i);
 
 		result = lsh_digest(ctx->setting.drbgtype, hash_data, STATE_MAX_SIZE * 8, hash_result[i]);
 	}
@@ -455,7 +455,7 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy,
 			return result;
 
 		for(int i = LSH_GET_HASHBYTE(ctx->setting.drbgtype) - 1, start = 0 ; i > -1 ; i--)
-			drbg_operation_add(target_state_V, STATE_MAX_SIZE, start++, hash_result[i]);
+			operation_add(target_state_V, STATE_MAX_SIZE, start++, hash_result[i]);
 
 		{		//***** TEXT OUTPUT - w(hash) V *****//
 			fprintf(outf, "w = ");
@@ -493,12 +493,12 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy,
 		return result;
 
 	for(int i = LSH_GET_HASHBYTE(ctx->setting.drbgtype) - 1, start = 0 ; i > -1 ; i--)
-		drbg_operation_add(target_state_V, STATE_MAX_SIZE, start++, hash_result[i]);
+		operation_add(target_state_V, STATE_MAX_SIZE, start++, hash_result[i]);
 
 	for(int i = STATE_MAX_SIZE - 1, start = 0 ; i > -1 ; i--)
-		drbg_operation_add(target_state_V, STATE_MAX_SIZE, start++, target_state_C[i]);
+		operation_add(target_state_V, STATE_MAX_SIZE, start++, target_state_C[i]);
 
-	drbg_operation_add(target_state_V, STATE_MAX_SIZE, 0, ctx->reseed_counter);
+	operation_add(target_state_V, STATE_MAX_SIZE, 0, ctx->reseed_counter);
 
 	ctx->reseed_counter += 1;
 

@@ -52,7 +52,7 @@ struct HMAC_DRBG_LSH_Context {
  *
  * @return LSH_SUCCESS 내부 상태 초기화 성공
  */
-lsh_err hmac_drbg_lsh_update(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *data, int data_size);
+lsh_err hmac_drbg_lsh_update(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *data, int data_size, FILE *outf);
 
 
 /**
@@ -90,7 +90,7 @@ lsh_err hmac_drbg_lsh_reseed(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *en
  *
  * @return LSH_SUCCESS 내부 상태 초기화 성공
  */
-lsh_err hmac_drbg_lsh_output_gen(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *entropy, int ent_size, const lsh_u8 *add_input, int add_size, int cycle, lsh_u8 *drbg, FILE *outf);
+lsh_err hmac_drbg_lsh_output_gen(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *entropy, int ent_size, const lsh_u8 *add_input, int add_size, int cycle, lsh_u8 *drbg, int *counter, FILE *outf);
 
 
 /**

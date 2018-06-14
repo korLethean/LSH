@@ -61,18 +61,6 @@ lsh_err hmac_drbg_lsh_update(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *da
 				return result;
 	}
 
-	{		//***** TEXT OUTPUT - Key, V, reseed_counter (after update) *****//
-		fprintf(outf, "*K = ");
-		for(int i = 0 ; i < ctx->output_bits / 8; i++)
-			fprintf(outf, "%02x", ctx->working_state_Key[i]);
-		fprintf(outf, "\n");
-		fprintf(outf, "*V = ");
-		for(int i = 0 ; i < ctx->output_bits / 8; i++)
-			fprintf(outf, "%02x", ctx->working_state_V[i]);
-		fprintf(outf, "\n");
-		fprintf(outf, "*reseed_counter = %d\n\n", ctx->reseed_counter);
-	}
-
 	return result;
 }
 
@@ -169,6 +157,18 @@ lsh_err hmac_drbg_lsh_init(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *entr
 	if(result != LSH_SUCCESS)
 		return result;
 
+	{		//***** TEXT OUTPUT - Key, V, reseed_counter (after update) *****//
+		fprintf(outf, "*K = ");
+		for(int i = 0 ; i < ctx->output_bits / 8; i++)
+			fprintf(outf, "%02x", ctx->working_state_Key[i]);
+		fprintf(outf, "\n");
+		fprintf(outf, "*V = ");
+		for(int i = 0 ; i < ctx->output_bits / 8; i++)
+			fprintf(outf, "%02x", ctx->working_state_V[i]);
+		fprintf(outf, "\n");
+		fprintf(outf, "*reseed_counter = %d\n\n", ctx->reseed_counter);
+	}
+
 	return result;
 }
 
@@ -213,6 +213,18 @@ lsh_err hmac_drbg_lsh_output_gen(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8
 		result = hmac_drbg_lsh_update(ctx, add_input, add_size, outf);
 		if(result != LSH_SUCCESS)
 			return result;
+
+		{		//***** TEXT OUTPUT - Key, V, reseed_counter (after update) *****//
+			fprintf(outf, "*K = ");
+			for(int i = 0 ; i < ctx->output_bits / 8; i++)
+				fprintf(outf, "%02x", ctx->working_state_Key[i]);
+			fprintf(outf, "\n");
+			fprintf(outf, "*V = ");
+			for(int i = 0 ; i < ctx->output_bits / 8; i++)
+				fprintf(outf, "%02x", ctx->working_state_V[i]);
+			fprintf(outf, "\n");
+			fprintf(outf, "*reseed_counter = %d\n\n", ctx->reseed_counter);
+		}
 	}
 
 	n = ceil((double) ctx->output_bits * 2 / (double) ctx->output_bits);
@@ -248,6 +260,18 @@ lsh_err hmac_drbg_lsh_output_gen(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8
 	result = hmac_drbg_lsh_update(ctx, add_input, add_size, outf);
 	if(result != LSH_SUCCESS)
 		return result;
+
+	{		//***** TEXT OUTPUT - Key, V, reseed_counter (after update) *****//
+		fprintf(outf, "*K = ");
+		for(int i = 0 ; i < ctx->output_bits / 8; i++)
+			fprintf(outf, "%02x", ctx->working_state_Key[i]);
+		fprintf(outf, "\n");
+		fprintf(outf, "*V = ");
+		for(int i = 0 ; i < ctx->output_bits / 8; i++)
+			fprintf(outf, "%02x", ctx->working_state_V[i]);
+		fprintf(outf, "\n");
+		fprintf(outf, "*reseed_counter = %d", ctx->reseed_counter);
+	}
 
 	return result;
 }
@@ -292,6 +316,9 @@ lsh_err hmac_drbg_lsh_digest(lsh_type algtype, lsh_u8 (*entropy)[64], int ent_si
 
 		if (result != LSH_SUCCESS)
 			return result;
+
+		if(i < ctx.setting.refresh_period)
+			fprintf(outf, "\n\n");
 	}
 
 	return result;

@@ -26,6 +26,7 @@ struct HMAC_DRBG_Administrative {
 	bool prediction_resistance;
 	bool using_perstring;
 	bool using_addinput;
+	bool is_addinput_null;
 };
 
 

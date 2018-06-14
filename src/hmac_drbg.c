@@ -219,22 +219,17 @@ lsh_err hmac_drbg_lsh_output_gen(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8
 
 	for(int i = 0 ; i < (int) n ; i++)
 	{
-		result = hmac_lsh_digest(ctx->setting.drbgtype, ctx->working_state_Key, ctx->output_bits / 8, ctx->working_state_V, ctx->output_bits / 8, hmac_result[i]);
+		result = hmac_lsh_digest(ctx->setting.drbgtype, ctx->working_state_Key, ctx->output_bits / 8, ctx->working_state_V, ctx->output_bits / 8, ctx->working_state_V);
 		if(result != LSH_SUCCESS)
 			return result;
-	}
 
-	for(int i = 0 ; i < output_index ; i++)
-	{
-		if(i == ctx->output_bits / 8)
-		{
-			flag += 1;
-			output_index -= ctx->output_bits / 8;
-			i = 0;
+		for(int r = 0 ; r < ctx->output_bits / 8; r++){
+			if(r != output_index)
+				drbg[w++] = ctx->working_state_V[r];
 		}
-
-		drbg[w++] = hmac_result[flag][i];
+		output_index -= ctx->output_bits / 8;
 	}
+
 
 	{		//***** TEXT OUTPUT - output(count) *****//
 		printf("output%d = ", *counter); // console output

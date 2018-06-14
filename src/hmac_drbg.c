@@ -178,6 +178,9 @@ lsh_err hmac_drbg_lsh_output_gen(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8
 
 	int output_index = ctx->output_bits * 2 / 8;
 
+	if(add_size)
+		ctx->setting.is_addinput_null = false;
+
 	{		//***** TEXT OUTPUT - Key, V, add_input (before output gen) *****//
 		fprintf(outf, "*K = ");
 		for(int i = 0 ; i < ctx->output_bits / 8; i++)

@@ -23,7 +23,8 @@ lsh_err hmac_drbg_lsh_update(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *da
 		input_data_size += data_size;
 	}
 
-	for(int i  = 0 ; i < input_data_size ; i++)
+	printf("update input data1 size %d : ", input_data_size);
+	for(int i = 0 ; i < input_data_size ; i++)
 		printf("%02x", input_data[i]);
 	printf("\n");
 
@@ -32,9 +33,8 @@ lsh_err hmac_drbg_lsh_update(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *da
 	if(result != LSH_SUCCESS)
 		return result;
 
-
 	// Calculate V
-	hmac_lsh_digest(ctx->setting.drbgtype, ctx->working_state_Key, ctx->output_bits / 8, ctx->working_state_V, ctx->output_bits / 8, ctx->working_state_V);
+	result = hmac_lsh_digest(ctx->setting.drbgtype, ctx->working_state_Key, ctx->output_bits / 8, ctx->working_state_V, ctx->output_bits / 8, ctx->working_state_V);
 	if(result != LSH_SUCCESS)
 			return result;
 
@@ -49,6 +49,11 @@ lsh_err hmac_drbg_lsh_update(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *da
 
 		for(int i = 0 ; i < data_size ; i++)
 			input_data[w++] = data[i];
+
+		printf("update input data2 size %d : ", input_data_size);
+		for(int i = 0 ; i < input_data_size ; i++)
+			printf("%02x", input_data[i]);
+		printf("\n");
 
 		result = hmac_lsh_digest(ctx->setting.drbgtype, ctx->working_state_Key, ctx->output_bits / 8, input_data, input_data_size, ctx->working_state_Key);
 		if(result != LSH_SUCCESS)
@@ -85,6 +90,8 @@ lsh_err hmac_drbg_lsh_reseed(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *en
 		return result;
 
 	ctx->reseed_counter = 1;
+
+	printf("RESEED FUNC CALLED \n");
 
 	{		//***** TEXT OUTPUT - entropy, Key, V (reseed function) *****//
 		fprintf(outf, "entropy = ");
@@ -210,7 +217,11 @@ lsh_err hmac_drbg_lsh_output_gen(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8
 	}
 	else if(!ctx->setting.is_addinput_null)
 	{
-		result = hmac_drbg_lsh_update(ctx, add_input, add_size, outf);
+		if(ctx->setting.using_addinput)
+			result = hmac_drbg_lsh_update(ctx, add_input, add_size, outf);
+		else
+			result = hmac_drbg_lsh_update(ctx, NULL, 0, outf);
+
 		if(result != LSH_SUCCESS)
 			return result;
 
@@ -254,13 +265,6 @@ lsh_err hmac_drbg_lsh_output_gen(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8
 		printf("\n");	// console output
 		fprintf(outf, "\n\n");
 	}
-	for(int i = 0 ; i < ctx->output_bits / 8 ; i++)
-		printf("%02x", ctx->working_state_Key[i]);
-	printf("\n");
-
-	for(int i = 0 ; i < ctx->output_bits / 8 ; i++)
-		printf("%02x", ctx->working_state_V[i]);
-	printf("\n");
 
 	if(!ctx->setting.is_addinput_null)
 		result = hmac_drbg_lsh_update(ctx, add_input, add_size, outf);
@@ -269,14 +273,6 @@ lsh_err hmac_drbg_lsh_output_gen(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8
 
 	if(result != LSH_SUCCESS)
 		return result;
-
-	for(int i = 0 ; i < ctx->output_bits / 8 ; i++)
-		printf("%02x", ctx->working_state_Key[i]);
-	printf("\n");
-
-	for(int i = 0 ; i < ctx->output_bits / 8 ; i++)
-		printf("%02x", ctx->working_state_V[i]);
-	printf("\n");
 
 	ctx->reseed_counter += 1;
 
@@ -291,6 +287,8 @@ lsh_err hmac_drbg_lsh_output_gen(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8
 		fprintf(outf, "\n");
 		fprintf(outf, "*reseed_counter = %d", ctx->reseed_counter);
 	}
+
+	printf("OUTPUT GEN FUNC EXITED \n");
 
 	return result;
 }

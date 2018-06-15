@@ -91,8 +91,6 @@ lsh_err hmac_drbg_lsh_reseed(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *en
 
 	ctx->reseed_counter = 1;
 
-	printf("RESEED FUNC CALLED \n");
-
 	{		//***** TEXT OUTPUT - entropy, Key, V (reseed function) *****//
 		fprintf(outf, "entropy = ");
 		for(int i = 0 ; i < ent_size; i++)
@@ -185,7 +183,9 @@ lsh_err hmac_drbg_lsh_output_gen(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8
 
 	int output_index = ctx->output_bits * 2 / 8;
 
-	if(add_size)
+	if(!ctx->setting.using_addinput)
+		ctx->setting.is_addinput_null = true;
+	else if(add_size)
 		ctx->setting.is_addinput_null = false;
 
 	{		//***** TEXT OUTPUT - Key, V, add_input (before output gen) *****//
@@ -288,8 +288,6 @@ lsh_err hmac_drbg_lsh_output_gen(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8
 		fprintf(outf, "*reseed_counter = %d", ctx->reseed_counter);
 	}
 
-	printf("OUTPUT GEN FUNC EXITED \n");
-
 	return result;
 }
 
@@ -303,11 +301,9 @@ lsh_err hmac_drbg_lsh_digest(lsh_type algtype, lsh_u8 (*entropy)[64], int ent_si
 	ctx.setting.drbgtype = algtype;
 	ctx.setting.refresh_period = cycle;
 
-	ctx.setting.prediction_resistance = false;	//예측내성
-	ctx.setting.using_perstring = true;		//개별화
-	ctx.setting.using_addinput = true;		//추가입력
-	ctx.setting.is_addinput_null = false;
-
+	ctx.setting.prediction_resistance = true;	//예측내성
+	ctx.setting.using_perstring = false;		//개별화
+	ctx.setting.using_addinput = false;		//추가입력
 
 /*	if(per_size != 0)
 		ctx.setting.using_perstring = true;

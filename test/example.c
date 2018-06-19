@@ -467,10 +467,10 @@ void drbg_lsh_test_drive()
 	int per_size		= 32;
 	int add_size		= 32;
 
-	sprintf(input_file_name, "DRBG_test/Hash_DRBG_LSH-256-256(no PR).txt");
+	sprintf(input_file_name, "DRBG_test/reference/Hash_DRBG_LSH-256-256(no PR).txt");
 	input_file = fopen(input_file_name, "r");
 
-	sprintf(output_file_name, "DRBG_test/Hash_DRBG_LSH-256-256(no PR)_rsp.txt");
+	sprintf(output_file_name, "DRBG_test/reference/Hash_DRBG_LSH-256-256(no PR)_rsp.txt");
 	output_file = fopen(output_file_name, "w");
 
 	algtype = LSH_TYPE_256_256;

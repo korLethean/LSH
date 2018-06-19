@@ -578,10 +578,10 @@ void hmac_drbg_lsh_test_drive()
 	int per_size		= 32;
 	int add_size		= 32;
 
-	sprintf(input_file_name, "HMAC_DRBG_test/HMAC_DRBG_LSH-256-256(no PR).txt");
+	sprintf(input_file_name, "HMAC_DRBG_test/reference/HMAC_DRBG_LSH-256-256(no PR).txt");
 	input_file = fopen(input_file_name, "r");
 
-	sprintf(output_file_name, "HMAC_DRBG_test/HMAC_DRBG_LSH-256-256(no PR)_rsp.txt");
+	sprintf(output_file_name, "HMAC_DRBG_test/reference/HMAC_DRBG_LSH-256-256(no PR)_rsp.txt");
 	output_file = fopen(output_file_name, "w");
 	fprintf(output_file, "Algo_ID = HMAC_DRBG_LSH-256_256 \n\n");
 
@@ -671,53 +671,202 @@ void hmac_drbg_lsh_test_drive()
 	fclose(output_file);
 }
 
-void lsh_simple_test()
+void drbg_lsh_testvector()
 {
-	FILE *input_file;
-	lsh_u8 data[256];
-	lsh_u8 hex_data[128];
-	int data_len;
-	int hex_len;
+	FILE *input_file, *output_file;
+	char input_file_name[MAX_FILE_NAME_LEN], output_file_name[MAX_FILE_NAME_LEN];
+	lsh_u8 read_line[MAX_DATA_LEN];
 
-	lsh_u8 hash[LSH512_HASH_VAL_MAX_BYTE_LEN];
-	lsh_err result;
-	lsh_type algtype = LSH_TYPE_256_256;
+	lsh_u8 drbg_result[LSH512_HASH_VAL_MAX_BYTE_LEN];
 
-	input_file = fopen("Hash_test/input.txt", "r");
-	fgets(data, MAX_READ_LEN, input_file);	// skip two lines
+	lsh_type algtype;
+	lsh_u8 entropy[256];
+	lsh_u8 entropy_pr1[256];
+	lsh_u8 entropy_pr2[256];
+	lsh_u8 nonce[256];
+	lsh_u8 per_string[256];
+	lsh_u8 add_input1[256];
+	lsh_u8 add_input2[256];
 
-	data_len = strlen(data);	// calculate key length
-	hex_len = data_len / 2;
+	bool prediction_resistance;
+	lsh_uint output_bits;
 
-	for(int r = 0, w = 0 ; r < data_len ; r += 2)
+	lsh_uint reseed_cycle = 1;
+
+	int entropy_size = 0;
+	int nonce_size = 0;
+	int per_size = 0;
+	int add_size = 0;
+	int count;
+
+	int r, w;
+	lsh_u8 *str_to_int;
+
+	sprintf(input_file_name, "DRBG_test/testvector/HASH_DRBG(LSH-256_256(-)(PR))_KAT_req.txt");
+	input_file = fopen(input_file_name, "r");
+
+	if(input_file == NULL)
 	{
-		lsh_u8 str_to_hex[3] = {data[r], data[r+1], '\0'};
-		hex_data[w++] = strtol(str_to_hex, NULL, 16);
+		printf("file does not exist \n");
+		return;
+	}
+	else
+		printf("test data from: %s \n", input_file_name);
+
+	sprintf(output_file_name, "DRBG_test/testvector/HASH_DRBG(LSH-256_256(-)(PR))_KAT_rsp.txt");
+	output_file = fopen(output_file_name, "w");
+
+	for(int i = 0 ; i < 4 ; i++)
+	{
+		fgets(read_line, MAX_READ_LEN, input_file);	// read algtype
+		read_line[strlen(read_line) - 1] = '\0';
+
+		if(!strcmp(read_line, "[LSH-256_224]"))
+		{
+			output_bits = 448;
+			algtype = LSH_TYPE_256_224;
+		}
+		else if(!strcmp(read_line, "[LSH-256_256]"))
+		{
+			output_bits = 512;
+			algtype = LSH_TYPE_256_256;
+		}
+		else if(!strcmp(read_line, "[LSH-512_224]"))
+		{
+			output_bits = 448;
+			algtype = LSH_TYPE_512_224;
+		}
+		else if(!strcmp(read_line, "[LSH-512_256]"))
+		{
+			output_bits = 512;
+			algtype = LSH_TYPE_512_256;
+		}
+		else if(!strcmp(read_line, "[LSH-512_384]"))
+		{
+			output_bits = 768;
+			algtype = LSH_TYPE_512_384;
+		}
+		else if(!strcmp(read_line, "[LSH-512_512]"))
+		{
+			output_bits = 1024;
+			algtype = LSH_TYPE_512_512;
+		}
+		else
+		{
+			printf("unknown algorithm type \n");
+			return;
+		}
+
+		fgets(read_line, MAX_READ_LEN, input_file);	// read PR
+		read_line[strlen(read_line) - 1] = '\0';
+		if(!strcmp(read_line, "[PredictionResistance = True]"))
+			prediction_resistance = true;
+		else if(!strcmp(read_line, "[PredictionResistance = false]"))
+			prediction_resistance = false;
+		else
+		{
+			printf("unknown prediction resistance setting \n");
+			return;
+		}
+
+		fgets(read_line, MAX_READ_LEN, input_file);	// read entropy length
+		str_to_int = &read_line[19];
+		entropy_size = atoi(str_to_int);
+
+		fgets(read_line, MAX_READ_LEN, input_file);	// read nonce length
+		str_to_int = &read_line[11];
+		nonce_size = atoi(str_to_int);
+
+		fgets(read_line, MAX_READ_LEN, input_file);	// read persnalization length
+		str_to_int = &read_line[27];
+		per_size = atoi(str_to_int);
+
+		fgets(read_line, MAX_READ_LEN, input_file); // read additional length
+		str_to_int = &read_line[21];
+		add_size = atoi(str_to_int);
+
+		fgets(read_line, MAX_READ_LEN, input_file);	// skip line
+
+		while(count != 14)
+		{
+			fgets(read_line, MAX_READ_LEN, input_file);	// get count
+			str_to_int = &read_line[8];
+			count = atoi(str_to_int);
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// get entropy
+			for(r = 15, w = 0 ; r < strlen(read_line) ; r += 2)
+			{
+				lsh_u8 str_to_hex[3] = {read_line[r], read_line[r+1], '\0'};
+				entropy[w++] = strtol(str_to_hex, NULL, 16);
+			}
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// get nocne
+			for(r = 8, w = 0 ; r < strlen(read_line) ; r += 2)
+			{
+				lsh_u8 str_to_hex[3] = {read_line[r], read_line[r+1], '\0'};
+				nonce[w++] = strtol(str_to_hex, NULL, 16);
+			}
+
+			fgets(read_line, MAX_READ_LEN, input_file); // get personalization string
+			if(per_size)
+			{
+				for(r = 24, w = 0 ; r < strlen(read_line) ; r += 2)
+				{
+					lsh_u8 str_to_hex[3] = {read_line[r], read_line[r+1], '\0'};
+					per_string[w++] = strtol(str_to_hex, NULL, 16);
+				}
+			}
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// get additional input1
+			if(add_size)
+			{
+				for(r = 18, w = 0 ; r < strlen(read_line) ; r += 2)
+				{
+					lsh_u8 str_to_hex[3] = {read_line[r], read_line[r+1], '\0'};
+					add_input1[w++] = strtol(str_to_hex, NULL, 16);
+				}
+			}
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// get entropy pr1
+			for(r = 17, w = 0 ; r < strlen(read_line) ; r += 2)
+			{
+				lsh_u8 str_to_hex[3] = {read_line[r], read_line[r+1], '\0'};
+				entropy_pr1[w++] = strtol(str_to_hex, NULL, 16);
+			}
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// get additional input2
+			if(add_size)
+			{
+				for(r = 18, w = 0 ; r < strlen(read_line) ; r += 2)
+				{
+					lsh_u8 str_to_hex[3] = {read_line[r], read_line[r+1], '\0'};
+					add_input2[w++] = strtol(str_to_hex, NULL, 16);
+				}
+			}
+
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// get entropy pr2
+			for(r = 17, w = 0 ; r < strlen(read_line) ; r += 2)
+			{
+				lsh_u8 str_to_hex[3] = {read_line[r], read_line[r+1], '\0'};
+				entropy_pr2[w++] = strtol(str_to_hex, NULL, 16);
+			}
+			fgets(read_line, MAX_READ_LEN, input_file);	// skip line
+		}
+		count = 0;
 	}
 
-	result = lsh_digest(algtype, hex_data, hex_len * 8, hash);
 
-	printf("Hash input: ");
-	for(int i = 0 ; i < hex_len ; i++)
-		printf("%02x", hex_data[i]);
-	printf("\n");
-
-	printf("input size: %d \n", hex_len);
-
-	printf("Hash output: ");
-	for(int i = 0 ; i < LSH_GET_HASHBYTE(algtype) ; i++)
-		printf("%02x", hash[i]);
-	printf("\n");
-
+	printf("DRBG test finished \n");
 }
 
 int main()
 {
 	//lsh_test_drive();
-	//lsh_simple_test();
 	//hmac_lsh_test_type2();
 	//drbg_lsh_test_drive();
-	hmac_drbg_lsh_test_drive();
+	//hmac_drbg_lsh_test_drive();
+	drbg_lsh_testvector();
 
 	return 0;
 }

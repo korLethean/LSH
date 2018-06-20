@@ -1157,7 +1157,7 @@ void drbg_lsh_testvector_no_pr()
 				for(int i = 0 ; i < add_size / 8 ; i++)
 					fprintf(output_file, "%02x", add_input_re[i]);
 				fprintf(output_file, "\nAdditionalInput2 = ");
-				for(int i = 0 ; i < entropy_size / 8 ; i++)
+				for(int i = 0 ; i < add_size / 8 ; i++)
 					fprintf(output_file, "%02x", add_input2[i]);
 				fprintf(output_file, "\nReturnedBits = ");
 				for(int i = 0 ; i < output_bits / 8 ; i++)

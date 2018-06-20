@@ -599,16 +599,16 @@ lsh_err drbg_lsh_testvector_digest(lsh_type algtype, bool pr, lsh_u8 *ent1, lsh_
 	else
 		ctx.setting.using_addinput = false;
 
-	result = drbg_lsh_init(&ctx, entropy[0], ent_byte, nonce, non_byte, per_string, per_byte, NULL, false);
+	result = drbg_lsh_init(&ctx, entropy[0], ent_byte, nonce, non_byte, per_string, per_byte, NULL, true);
 	if (result != LSH_SUCCESS)
 		return result;
 
 	for(int i = 0 ; i < ctx.setting.refresh_period + 1 ; i++)
 	{
 		if(ctx.setting.prediction_resistance || ctx.setting.refresh_period == 0)
-			result = drbg_lsh_output_gen(&ctx, entropy[i+1], ent_byte, additional[i], add_byte, output_bits, cycle, drbg, NULL, false);
+			result = drbg_lsh_output_gen(&ctx, entropy[i+1], ent_byte, additional[i], add_byte, output_bits, cycle, drbg, NULL, true);
 		else
-			result = drbg_lsh_output_gen(&ctx, entropy[i], ent_byte, additional[i], add_byte, output_bits, cycle, drbg, NULL, false);
+			result = drbg_lsh_output_gen(&ctx, entropy[i], ent_byte, additional[i], add_byte, output_bits, cycle, drbg, NULL, true);
 
 		if (result != LSH_SUCCESS)
 			return result;

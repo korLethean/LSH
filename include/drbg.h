@@ -129,6 +129,8 @@ lsh_err drbg_lsh_digest(lsh_type algtype, lsh_u8 (*entropy)[64], int ent_size, l
 lsh_err drbg_lsh_testvector_digest(lsh_type algtype, bool pr, lsh_u8 *ent1, lsh_u8 *ent2, lsh_u8 *ent3, int ent_size, lsh_u8 *nonce, int non_size, lsh_u8 *per_string, int per_size, lsh_u8 *add1, lsh_u8 *add2, int add_size, int output_bits, int cycle, lsh_u8 *drbg);
 
 
+lsh_err drbg_lsh_testvector_no_pr_digest(lsh_type algtype, bool pr, lsh_u8 *ent, lsh_u8 *ent_re, int ent_size, lsh_u8 *nonce, int non_size, lsh_u8 *per_string, int per_size, lsh_u8 *add1, lsh_u8 *add_re, lsh_u8 *add2, int add_size, int output_bits, int cycle, lsh_u8 *drbg);
+
 #ifdef __cplusplus
 }
 #endif

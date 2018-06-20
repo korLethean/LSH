@@ -440,6 +440,12 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy,
 		fprintf(outf, "\n");
 	}
 
+	if(tv && ctx->reseed_counter > 1)
+	{	// test vector forced reseed
+		result = drbg_lsh_reseed(ctx, entropy, ent_size, add_input + (add_size * 8), add_size, outf, false);
+		if (result != LSH_SUCCESS)
+			return result;
+	}
 
 	if(ctx->reseed_counter > ctx->setting.refresh_period || ctx->setting.prediction_resistance)
 	{
@@ -574,7 +580,7 @@ lsh_err drbg_lsh_digest(lsh_type algtype, lsh_u8 (*entropy)[64], int ent_size, l
 	return result;
 }
 
-lsh_err drbg_lsh_testvector_digest(lsh_type algtype, bool pr, lsh_u8 *ent1, lsh_u8 *ent2, lsh_u8 *ent3, int ent_size, lsh_u8 *nonce, int non_size, lsh_u8 *per_string, int per_size, lsh_u8 *add1, lsh_u8 *add2, int add_size, int output_bits, int cycle, lsh_u8 *drbg)
+lsh_err drbg_lsh_testvector_pr_digest(lsh_type algtype, bool pr, lsh_u8 *ent1, lsh_u8 *ent2, lsh_u8 *ent3, int ent_size, lsh_u8 *nonce, int non_size, lsh_u8 *per_string, int per_size, lsh_u8 *add1, lsh_u8 *add2, int add_size, int output_bits, int cycle, lsh_u8 *drbg)
 {
 	struct DRBG_LSH_Context ctx;
 	lsh_err result;
@@ -617,3 +623,41 @@ lsh_err drbg_lsh_testvector_digest(lsh_type algtype, bool pr, lsh_u8 *ent1, lsh_
 	return result;
 }
 
+lsh_err drbg_lsh_testvector_no_pr_digest(lsh_type algtype, bool pr, lsh_u8 *ent, lsh_u8 *ent_re, int ent_size, lsh_u8 *nonce, int non_size, lsh_u8 *per_string, int per_size, lsh_u8 *add1, lsh_u8 *add_re, lsh_u8 *add2, int add_size, int output_bits, int cycle, lsh_u8 *drbg)
+{
+	struct DRBG_LSH_Context ctx;
+	lsh_err result;
+	lsh_u8 *additional[3] = {add1, add2, add_re};
+
+	int ent_byte = ent_size / 8;
+	int non_byte = non_size / 8;
+	int per_byte = per_size / 8;
+	int add_byte = add_size / 8;
+
+	ctx.setting.drbgtype = algtype;
+	ctx.setting.refresh_period = cycle;
+
+	ctx.setting.prediction_resistance = pr;	//예측내성
+	if(per_size)
+		ctx.setting.using_perstring = true;		//개별화
+	else
+		ctx.setting.using_perstring = false;
+	if(add_size)
+		ctx.setting.using_addinput = true;		//추가입력
+	else
+		ctx.setting.using_addinput = false;
+
+	result = drbg_lsh_init(&ctx, ent, ent_byte, nonce, non_byte, per_string, per_byte, NULL, true);
+	if (result != LSH_SUCCESS)
+		return result;
+
+	for(int i = 0 ; i < ctx.setting.refresh_period + 1 ; i++)
+	{
+		result = drbg_lsh_output_gen(&ctx, ent_re, ent_byte, additional[i], add_byte, output_bits, cycle, drbg, NULL, true);
+
+		if (result != LSH_SUCCESS)
+			return result;
+	}
+
+	return result;
+}

@@ -1209,16 +1209,17 @@ void hmac_drbg_lsh_testvector_pr()
 	int is_ary[2] = {256, 512};
 	int os_ary[4] = {224, 256, 384, 512};
 
-	/*for(is = 0, os = 0 ; os < 4 ; os++)
+	for(is = 0, os = 0 ; os < 4 ; os++)
 	{
 		if(is == 0 && os == 2)
 		{
 			is = 1;
 			os = -1;
 			continue;
-		}*/
-		sprintf(input_file_name, "HMAC_DRBG_test/testvector/HMAC_DRBG(LSH-%d_%d(-)(PR))_KAT_req.txt", is_ary[0], os_ary[1]);
-		sprintf(output_file_name, "HMAC_DRBG_test/testvector/HMAC_DRBG(LSH-%d_%d(-)(PR))_KAT_rsp.txt", is_ary[0], os_ary[1]);
+		}
+
+		sprintf(input_file_name, "HMAC_DRBG_test/testvector/HMAC_DRBG(LSH-%d_%d(-)(PR))_KAT_req.txt", is_ary[is], os_ary[os]);
+		sprintf(output_file_name, "HMAC_DRBG_test/testvector/HMAC_DRBG(LSH-%d_%d(-)(PR))_KAT_rsp.txt", is_ary[is], os_ary[os]);
 		input_file = fopen(input_file_name, "r");
 		output_file = fopen(output_file_name, "w");
 
@@ -1239,37 +1240,37 @@ void hmac_drbg_lsh_testvector_pr()
 			{
 				output_bits = 448;
 				algtype = LSH_TYPE_256_224;
-				fprintf(output_file, "Algo_ID = Hash_DRBG_LSH-256_224\n");
+				fprintf(output_file, "Algo_ID = HMAC_DRBG_LSH-256_224\n");
 			}
 			else if(!strcmp(read_line, "[LSH-256_256]"))
 			{
 				output_bits = 512;
 				algtype = LSH_TYPE_256_256;
-				fprintf(output_file, "Algo_ID = Hash_DRBG_LSH-256_256\n");
+				fprintf(output_file, "Algo_ID = HMAC_DRBG_LSH-256_256\n");
 			}
 			else if(!strcmp(read_line, "[LSH-512_224]"))
 			{
 				output_bits = 448;
 				algtype = LSH_TYPE_512_224;
-				fprintf(output_file, "Algo_ID = Hash_DRBG_LSH-512_224\n");
+				fprintf(output_file, "Algo_ID = HMAC_DRBG_LSH-512_224\n");
 			}
 			else if(!strcmp(read_line, "[LSH-512_256]"))
 			{
 				output_bits = 512;
 				algtype = LSH_TYPE_512_256;
-				fprintf(output_file, "Algo_ID = Hash_DRBG_LSH-512_256\n");
+				fprintf(output_file, "Algo_ID = HMAC_DRBG_LSH-512_256\n");
 			}
 			else if(!strcmp(read_line, "[LSH-512_384]"))
 			{
 				output_bits = 768;
 				algtype = LSH_TYPE_512_384;
-				fprintf(output_file, "Algo_ID = Hash_DRBG_LSH-512_384\n");
+				fprintf(output_file, "Algo_ID = HMAC_DRBG_LSH-512_384\n");
 			}
 			else if(!strcmp(read_line, "[LSH-512_512]"))
 			{
 				output_bits = 1024;
 				algtype = LSH_TYPE_512_512;
-				fprintf(output_file, "Algo_ID = Hash_DRBG_LSH-512_512\n");
+				fprintf(output_file, "Algo_ID = HMAC_DRBG_LSH-512_512\n");
 			}
 			else
 			{
@@ -1418,7 +1419,7 @@ void hmac_drbg_lsh_testvector_pr()
 
 		fclose(input_file);
 		fclose(output_file);
-//	}
+	}
 
 	printf("HMAC DRBG testvector finished \n");
 }

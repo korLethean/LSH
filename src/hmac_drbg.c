@@ -211,14 +211,25 @@ lsh_err hmac_drbg_lsh_output_gen(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8
 
 	if(tv)
 	{
-		if(ctx->reseed_counter > 1)
+		if(ctx->setting.prediction_resistance)
+		{
+			if(add_input)
+				ctx->setting.is_addinput_null = false;
+			result = hmac_drbg_lsh_reseed(ctx, entropy, ent_size, add_input, add_size, outf, false);
+			if (result != LSH_SUCCESS)
+				return result;
+			ctx->setting.is_addinput_null = true;
+		}
+		else if(ctx->reseed_counter > 1 && !ctx->setting.prediction_resistance)
 		{	// test vector forced reseed
 			result = hmac_drbg_lsh_reseed(ctx, entropy, ent_size, add_input + (add_size * 8), add_size, outf, false);
 			if (result != LSH_SUCCESS)
 				return result;
+			if(add_size)
+				ctx->setting.is_addinput_null = false;
 		}
 
-		if(add_size)
+		if(!ctx->setting.is_addinput_null)
 		{	// ****** inner reseed ****** //
 			if(ctx->setting.using_addinput)
 				result = hmac_drbg_lsh_update(ctx, add_input, add_size, outf, tv);
@@ -365,7 +376,6 @@ lsh_err hmac_drbg_lsh_digest(lsh_type algtype, lsh_u8 (*entropy)[64], int ent_si
 			result = hmac_drbg_lsh_output_gen(&ctx, entropy[i+1], ent_size, add_input[i], add_size, cycle, drbg, &counter, outf, false);
 		else
 			result = hmac_drbg_lsh_output_gen(&ctx, entropy[i], ent_size, add_input[i], add_size, cycle, drbg, &counter, outf, false);
-
 		if (result != LSH_SUCCESS)
 			return result;
 
@@ -394,7 +404,6 @@ lsh_err hmac_drbg_lsh_tv_pr_digest(lsh_type algtype, bool pr, lsh_u8 *ent1, lsh_
 	ctx.setting.drbgtype = algtype;
 	ctx.setting.refresh_period = cycle;
 
-
 	ctx.setting.prediction_resistance = pr;	//예측내성
 	if(per_size)
 		ctx.setting.using_perstring = true;		//개별화
@@ -415,7 +424,6 @@ lsh_err hmac_drbg_lsh_tv_pr_digest(lsh_type algtype, bool pr, lsh_u8 *ent1, lsh_
 			result = hmac_drbg_lsh_output_gen(&ctx, entropy[i+1], ent_byte, additional[i], add_byte, cycle, drbg, &counter, NULL, true);
 		else
 			result = hmac_drbg_lsh_output_gen(&ctx, entropy[i], ent_byte, additional[i], add_byte, cycle, drbg, &counter, NULL, true);
-
 		if (result != LSH_SUCCESS)
 			return result;
 	}
@@ -436,6 +444,7 @@ lsh_err hmac_drbg_lsh_tv_no_pr_digest(lsh_type algtype, bool pr, lsh_u8 *ent, ls
 
 	int counter = 1;
 
+	ctx.output_bits = output_bits / 2;
 	ctx.setting.drbgtype = algtype;
 	ctx.setting.refresh_period = cycle;
 
@@ -456,7 +465,6 @@ lsh_err hmac_drbg_lsh_tv_no_pr_digest(lsh_type algtype, bool pr, lsh_u8 *ent, ls
 	for(int i = 0 ; i < ctx.setting.refresh_period + 1 ; i++)
 	{
 		result = hmac_drbg_lsh_output_gen(&ctx, ent_re, ent_byte, additional[i], add_byte, cycle, drbg, &counter, NULL, true);
-
 		if (result != LSH_SUCCESS)
 			return result;
 	}

@@ -23,6 +23,11 @@ lsh_err hmac_drbg_lsh_update(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *da
 		input_data_size += data_size;
 	}
 
+	/*printf("update input data1 size %d : ", input_data_size);
+	for(int i = 0 ; i < input_data_size ; i++)
+		printf("%02x", input_data[i]);
+	printf("\n");*/
+
 	// Calculate Key
 	result = hmac_lsh_digest(ctx->setting.drbgtype, ctx->working_state_Key, ctx->output_bits / 8, input_data, input_data_size, ctx->working_state_Key);
 	if(result != LSH_SUCCESS)
@@ -122,9 +127,10 @@ lsh_err hmac_drbg_lsh_init(struct HMAC_DRBG_LSH_Context *ctx, const lsh_u8 *entr
 
 	if(ctx->setting.using_perstring)
 	{
-		for(int i = 0 ; i < per_size ; i++)
+		for(int i = 0 ; i < per_size ; i++) {
 			seed_material[w++] = per_string[i];
-		seed_size += per_size;
+			//printf("%02x", per_string[i]);
+		}
 	}
 
 	for(int i = 0 ; i < ctx->output_bits / 8 ; i++)
@@ -384,8 +390,10 @@ lsh_err hmac_drbg_lsh_tv_pr_digest(lsh_type algtype, bool pr, lsh_u8 *ent1, lsh_
 
 	int counter = 1;
 
+	ctx.output_bits = output_bits / 2;
 	ctx.setting.drbgtype = algtype;
 	ctx.setting.refresh_period = cycle;
+
 
 	ctx.setting.prediction_resistance = pr;	//예측내성
 	if(per_size)

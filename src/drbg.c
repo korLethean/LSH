@@ -442,14 +442,26 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy,
 
 	if(tv)
 	{
-		if(ctx->reseed_counter > 1)
+		if(ctx->setting.prediction_resistance)
+		{
+			if(add_input)
+				ctx->setting.using_addinput = true;
+
+			result = drbg_lsh_reseed(ctx, entropy, ent_size, add_input, add_size, outf, false);
+			if (result != LSH_SUCCESS)
+				return result;
+			ctx->setting.using_addinput = false;
+		}
+		else if(ctx->reseed_counter > 1 && !ctx->setting.prediction_resistance)
 		{	// test vector forced reseed
 			result = drbg_lsh_reseed(ctx, entropy, ent_size, add_input + (add_size * 8), add_size, outf, false);
 			if (result != LSH_SUCCESS)
 				return result;
+			if(add_size)
+				ctx->setting.using_addinput = true;
 		}
 
-		if(add_size)
+		if(ctx->setting.using_addinput)
 		{	// ****** inner reseed ****** //
 			hash_data[0] = 0x02;
 			for(r = 0 , w = 1 ; r < STATE_MAX_SIZE ; r++)

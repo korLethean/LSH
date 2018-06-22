@@ -26,6 +26,7 @@
 #include "../include/hmac.h"
 #include "../include/drbg.h"
 #include "../include/hmac_drbg.h"
+#include "../include/pbkdf.h"
 
 #define MAX_FILE_NAME_LEN 256
 #define MAX_READ_LEN 3072
@@ -1284,13 +1285,11 @@ void hmac_drbg_lsh_testvector_pr()
 			{
 				prediction_resistance = true;
 				fprintf(output_file, "PredictionResistance = True\n");
-				printf("Prediction Resistance: True \n");
 			}
 			else if(!strcmp(read_line, "[PredictionResistance = False]"))
 			{
 				prediction_resistance = false;
 				fprintf(output_file, "PredictionResistance = False\n");
-				//printf("Prediction Resistance: false \n");
 			}
 			else
 			{
@@ -1489,37 +1488,37 @@ void hmac_drbg_lsh_testvector_no_pr()
 			{
 				output_bits = 448;
 				algtype = LSH_TYPE_256_224;
-				fprintf(output_file, "Algo_ID = Hash_DRBG_LSH-256_224\n");
+				fprintf(output_file, "Algo_ID = HMAC_DRBG_LSH-256_224\n");
 			}
 			else if(!strcmp(read_line, "[LSH-256_256]"))
 			{
 				output_bits = 512;
 				algtype = LSH_TYPE_256_256;
-				fprintf(output_file, "Algo_ID = Hash_DRBG_LSH-256_256\n");
+				fprintf(output_file, "Algo_ID = HMAC_DRBG_LSH-256_256\n");
 			}
 			else if(!strcmp(read_line, "[LSH-512_224]"))
 			{
 				output_bits = 448;
 				algtype = LSH_TYPE_512_224;
-				fprintf(output_file, "Algo_ID = Hash_DRBG_LSH-512_224\n");
+				fprintf(output_file, "Algo_ID = HMAC_DRBG_LSH-512_224\n");
 			}
 			else if(!strcmp(read_line, "[LSH-512_256]"))
 			{
 				output_bits = 512;
 				algtype = LSH_TYPE_512_256;
-				fprintf(output_file, "Algo_ID = Hash_DRBG_LSH-512_256\n");
+				fprintf(output_file, "Algo_ID = HMAC_DRBG_LSH-512_256\n");
 			}
 			else if(!strcmp(read_line, "[LSH-512_384]"))
 			{
 				output_bits = 768;
 				algtype = LSH_TYPE_512_384;
-				fprintf(output_file, "Algo_ID = Hash_DRBG_LSH-512_384\n");
+				fprintf(output_file, "Algo_ID = HMAC_DRBG_LSH-512_384\n");
 			}
 			else if(!strcmp(read_line, "[LSH-512_512]"))
 			{
 				output_bits = 1024;
 				algtype = LSH_TYPE_512_512;
-				fprintf(output_file, "Algo_ID = Hash_DRBG_LSH-512_512\n");
+				fprintf(output_file, "Algo_ID = HMAC_DRBG_LSH-512_512\n");
 			}
 			else
 			{
@@ -1675,6 +1674,11 @@ void hmac_drbg_lsh_testvector_no_pr()
 	printf("HMAC DRBG testvector finished \n");
 }
 
+void lsh_pbkdf_test_drive()
+{
+	printf("PBKDF test drive \n");
+}
+
 int main()
 {
 	//lsh_test_drive();
@@ -1683,8 +1687,9 @@ int main()
 	//hmac_drbg_lsh_test_drive();
 	//drbg_lsh_testvector_pr();
 	//drbg_lsh_testvector_no_pr();
-	hmac_drbg_lsh_testvector_pr();
+	//hmac_drbg_lsh_testvector_pr();
 	//hmac_drbg_lsh_testvector_no_pr();
+	lsh_pbkdf_test_drive();
 
 	return 0;
 }

@@ -1676,6 +1676,27 @@ void hmac_drbg_lsh_testvector_no_pr()
 
 void lsh_pbkdf_test_drive()
 {
+
+	FILE *input_file, *output_file;
+	char input_file_name[MAX_FILE_NAME_LEN], output_file_name[MAX_FILE_NAME_LEN];
+
+	lsh_type algtype;
+	lsh_uint iteration_count;
+	lsh_uint k_len;
+	lsh_uint loop_count;
+
+	lsh_u8 password[13] = "HellowWorld!\0";
+	lsh_u8 salt[18] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20, 0x21};
+
+	int hash_len = LSH_GET_HASHBYTE(algtype);
+
+	algtype = LSH_TYPE_256_256;
+	iteration_count = 2048;
+	k_len = 512;
+	loop_count = 3;
+
+	lsh_pbkdf_digest(algtype, password, salt, 12, 18, iteration_count, loop_count, k_len, hash_len, NULL, NULL);
+
 	printf("PBKDF test drive \n");
 }
 

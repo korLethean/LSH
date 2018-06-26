@@ -10,6 +10,7 @@
 lsh_err hmac_pbkdf_ctr_digest(lsh_type algtype, int loop_count, lsh_u8 output)
 {
 	lsh_err result;
+	lsh_u8 *input;
 
 	return result;
 }
@@ -28,7 +29,7 @@ lsh_err hmac_kdf_dp_digest(lsh_type algtype, int loop_count, lsh_u8 output)
 	return result;
 }
 
-lsh_err hmac_kdf_digest(int mode, lsh_type algtype, lsh_u8 *Ki, lsh_u8 *label, lsh_u8 *context, lsh_uint r, lsh_uint len, lsh_uint hash_len)
+lsh_err hmac_kdf_digest(int mode, lsh_type algtype, lsh_u8 *Ki, int Ki_len, lsh_u8 *label, int label_len, lsh_u8 *context, int context_len, lsh_uint r, lsh_uint len, lsh_uint hash_len)
 {
 	lsh_err result;
 	lsh_u8 *digest;

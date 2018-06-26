@@ -14,7 +14,7 @@
 #define FB_MODE 2
 #define DP_MODE 3
 
-lsh_err hmac_kdf_ctr_digest(lsh_type algtype, int loop_count, lsh_u8 output, FILE *fp);
+lsh_err hmac_kdf_ctr_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 *Ki, int Ki_len, lsh_u8 *label, int label_len, lsh_u8 *context, int ct_len, lsh_uint len, lsh_u8 output, FILE *fp);
 
 lsh_err hmac_kdf_fb_digest(lsh_type algtype, int loop_count, lsh_u8 output, FILE *fp);
 

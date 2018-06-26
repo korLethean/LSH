@@ -27,13 +27,16 @@ lsh_err lsh_pbkdf_gen(lsh_type algtype, int hash_len, lsh_u8 *U, lsh_uint size_u
 			T[index++] ^=  U[j];
 		index = t_index;
 
-		fprintf(fp, "U%d = ", i + 1);
-		for(int j = 0 ; j < hash_len ; j++)
-			fprintf(fp, "%02x", U[j]);
-		fprintf(fp, "\nT%d = ", t_num);
-		for(int j = 0 ; j < hash_len ; j++)
-			fprintf(fp, "%02x", T[index++]);
-		fprintf(fp, "\n\n");
+		if(i < 3 || i > iteration_count - 4)
+		{
+			fprintf(fp, "U%d = ", i + 1);
+			for(int j = 0 ; j < hash_len ; j++)
+				fprintf(fp, "%02x", U[j]);
+			fprintf(fp, "\nT%d = ", t_num);
+			for(int j = 0 ; j < hash_len ; j++)
+				fprintf(fp, "%02x", T[index++]);
+			fprintf(fp, "\n\n");
+		}
 
 		index = t_index;
 	}
@@ -53,18 +56,21 @@ lsh_err lsh_pbkdf_digest(lsh_type algtype, lsh_u8 *password, lsh_u8 *salt, int p
 	int r, w;
 	int size_u, size_t;
 
-	//len = ceil((double) key_len / (double) hash_len);
-	size_t = loop_count * (key_len / 8) / 2;
+	if(!loop_count)
+		len = ceil((double) key_len / (double) hash_len);
+	else
+		len = loop_count;
+
+	size_t = hash_len * len;
 
 	T = (lsh_u8*) malloc(sizeof(lsh_u8) * size_t);
 
 	for(int i = 0 ; i < size_t ; i++)
 		T[i] = '\0';
 
-	for(int i = 0 ; i < loop_count ; i++)
+	for(int i = 0 ; i < len ; i++)
 	{
-		int t_index = size_t / loop_count * i;
-		printf("%d \n", t_index);
+		int t_index = size_t / len * i;
 
 		for(r = 0, w = 0 ; r < salt_size ; r++)
 			U[w++] = salt[r];
@@ -77,13 +83,11 @@ lsh_err lsh_pbkdf_digest(lsh_type algtype, lsh_u8 *password, lsh_u8 *salt, int p
 		fprintf(fp, "U0 = ");
 		for(int j = 0 ; j < size_u ; j++)
 			fprintf(fp, "%02x", U[j]);
-		fprintf(fp, "\n");
+		fprintf(fp, "\n\n");
 
 		result = lsh_pbkdf_gen(algtype, hash_len, U, size_u, T, t_index, i + 1, password, pass_size, iteration_count, fp);
-		if(result != LSH_SUCCESS) {
-			printf("df \n");
+		if(result != LSH_SUCCESS)
 			return result;
-		}
 	}
 
 	fprintf(fp, "MK = ");

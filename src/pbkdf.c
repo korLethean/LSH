@@ -68,8 +68,11 @@ lsh_err lsh_pbkdf_digest(lsh_type algtype, lsh_u8 *password, lsh_u8 *salt, int p
 
 		for(r = 0, w = 0 ; r < salt_size ; r++)
 			U[w++] = salt[r];
+		U[w++] = 0;
+		U[w++] = 0;
+		U[w++] = 0;
 		U[w] = i + 1;
-		size_u = salt_size + 1;
+		size_u = salt_size + 4;
 		/********** outer loop OUTPUT **********/
 		fprintf(fp, "U0 = ");
 		for(int j = 0 ; j < size_u ; j++)

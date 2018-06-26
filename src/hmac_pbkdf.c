@@ -12,15 +12,42 @@ lsh_err hmac_kdf_ctr_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8
 {
 	lsh_err result;
 	lsh_u8 *input;
+	int input_size;
+	int temp_index = 0;
 
-	input = (lsh_u8*) malloc(sizeof(lsh_u8) * (byte_r + Ki_len, label_len, ct_len + 3));	// 3 = 0x00(1) || [L]2(2)
+	input_size = byte_r + label_len + ct_len + 3;	// 3 = 0x00(1) || [L]2(2)
+	printf("size : %d \n", input_size);
+
+	input = (lsh_u8*) malloc(sizeof(lsh_u8) * (input_size));
+	for(int i = 0 ; i < input_size ; i++)
+		input[i] = '\0';	// initializing input
+
+	temp_index = byte_r;
+	for(int i = 0 ; i < label_len ; i++)
+		input[temp_index++] = label[i];	// || label
+	input[temp_index++] = 0;			// || 0x00
+	for(int i = 0 ; i < ct_len ; i++)
+		input[temp_index++] = context[i];//|| context
+	input[temp_index + 1] = len % 256;
+	len /= 256;
+	input[temp_index] = len % 256;		// || [L]2
+
 
 	for(int i = 0 ; i < loop_count ; i++)
 	{
+		printf("count %d \n", i);
 
+		if(byte_r)
+		{
+			for(temp_index = 0 ; temp_index < byte_r - 1; temp_index++)
+				input[temp_index] = 0;
+			input[temp_index] = i;
+		}
 
-		if(result != LSH_SUCCESS)
-			return result;
+		for(int j = 0 ; j < input_size ; j++)
+			printf("%02x", input[j]);
+		printf("\n");
+
 	}
 
 	free(input);
@@ -50,7 +77,8 @@ lsh_err hmac_kdf_digest(int mode, lsh_type algtype, lsh_u8 *Ki, int Ki_len, lsh_
 
 	int byte_r = r / 8;
 
-	n = ceil((double)len / (double) hash_len);
+//	n = ceil((double)len / (double) hash_len);
+	n = 3;
 
 	Ko = (lsh_u8*) malloc(sizeof(lsh_u8) * len);
 

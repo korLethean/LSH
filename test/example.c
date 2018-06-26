@@ -1679,40 +1679,127 @@ void lsh_pbkdf_test_drive()
 	FILE *input_file, *output_file;
 	char input_file_name[MAX_FILE_NAME_LEN], output_file_name[MAX_FILE_NAME_LEN];
 
+	lsh_u8 read_line[MAX_DATA_LEN];
+
 	lsh_type algtype;
 	lsh_uint iteration_count;
 	lsh_uint k_len;
 	lsh_uint loop_count;
+	int hash_len;
 
-	lsh_u8 password[13] = "HellowWorld!\0";
-	lsh_u8 salt[18] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20, 0x21};
+	lsh_u8 password[256];
+	lsh_uint pw_len;
+	lsh_u8 salt[512];
+	lsh_uint salt_len;
 
-	algtype = LSH_TYPE_256_256;
-	iteration_count = 2048;
-	k_len = 512;
-	loop_count = 3;
+	int is, os;
+	int is_ary[2] = {256, 512};
+	int os_ary[4] = {224, 256, 384, 512};
 
-	int hash_len = LSH_GET_HASHBYTE(algtype);
+	int r, w;
 
-//	sprintf(input_file_name, "PBKDF_test/pbkdf.txt");
-	sprintf(output_file_name, "PBKDF_test/pbkdf_temp_output.txt");
-//	input_file = fopen(input_file_name, "r");
-	output_file = fopen(output_file_name, "w");
+	for(is = 0, os = 0 ; os < 4 ; os++)
+	{
+		if(is == 0 && os == 2)
+		{
+			is = 1;
+			os = -1;
+			continue;
+		}
+		sprintf(input_file_name, "PBKDF_test/PBKDF_LSH-%d_%d.txt", is_ary[is], os_ary[os]);
+		sprintf(output_file_name, "PBKDF_test/PBKDF_LSH-%d_%d_rsp.txt", is_ary[is], os_ary[os]);
+		input_file = fopen(input_file_name, "r");
+		output_file = fopen(output_file_name, "w");
+		if(input_file == NULL)
+		{
+			printf("file does not exist \n");
+			return;
+		}
+		else
+			printf("test data from: %s \n", input_file_name);
 
-	fprintf(output_file, "Algo_ID = PBKDF_LSH-256_256\n\n");
-	fprintf(output_file, "Password = %s\n", password);
-	fprintf(output_file, "Salt = ");
-	for(int i = 0 ; i < 18 ; i++)
-		fprintf(output_file, "%02x", salt[i]);
-	fprintf(output_file, "\n");
-	fprintf(output_file, "IterationCount = %d\n", iteration_count);
-	fprintf(output_file, "kLen = %d\n", k_len);
-	fprintf(output_file, "loopCount = %d\n\n\n", loop_count);
 
-	lsh_pbkdf_digest(algtype, password, salt, 12, 18, iteration_count, loop_count, k_len, hash_len, output_file);
+		fgets(read_line, MAX_READ_LEN, input_file);	// read algtype
+		read_line[strlen(read_line) - 1] = '\0';
 
-//	fclose(input_file);
-	fclose(output_file);
+		if(!strcmp(read_line, "Algo_ID = PBKDF_LSH-256_224"))
+		{
+			algtype = LSH_TYPE_256_224;
+			fprintf(output_file, "Algo_ID = PBKDF_LSH-256_224\n\n");
+		}
+		else if(!strcmp(read_line, "Algo_ID = PBKDF_LSH-256_256"))
+		{
+			algtype = LSH_TYPE_256_256;
+			fprintf(output_file, "Algo_ID = PBKDF_LSH-256_256\n\n");
+		}
+		else if(!strcmp(read_line, "Algo_ID = PBKDF_LSH-512_224"))
+		{
+			algtype = LSH_TYPE_512_224;
+			fprintf(output_file, "Algo_ID = PBKDF_LSH-512_224\n\n");
+		}
+		else if(!strcmp(read_line, "Algo_ID = PBKDF_LSH-512_256"))
+		{
+			algtype = LSH_TYPE_512_256;
+			fprintf(output_file, "Algo_ID = PBKDF_LSH-512_256\n\n");
+		}
+		else if(!strcmp(read_line, "Algo_ID = PBKDF_LSH-512_384"))
+		{
+			algtype = LSH_TYPE_512_384;
+			fprintf(output_file, "Algo_ID = PBKDF_LSH-512_384\n\n");
+		}
+		else if(!strcmp(read_line, "Algo_ID = PBKDF_LSH-512_512"))
+		{
+			algtype = LSH_TYPE_512_512;
+			fprintf(output_file, "Algo_ID = PBKDF_LSH-512_512\n\n");
+		}
+		else
+		{
+			printf("unknown algorithm type \n");
+			return;
+		}
+
+		hash_len = LSH_GET_HASHBYTE(algtype);
+
+		fgets(read_line, MAX_READ_LEN, input_file);	// skip line
+
+		fgets(read_line, MAX_READ_LEN, input_file);	// read password
+		pw_len = 0;
+		for(r = 11, w = 0 ; r < strlen(read_line) - 1 ; r++)
+		{
+			password[w++] = read_line[r];
+			pw_len++;
+		}
+
+		fgets(read_line, MAX_READ_LEN, input_file);	// read salt
+		salt_len = 0;
+		for(r = 7, w = 0 ; r < strlen(read_line) - 1 ; r += 2)
+		{
+			lsh_u8 temp_arr[3] = {read_line[r], read_line[r + 1], '\0'};
+			salt[w++] = strtol(temp_arr, NULL, 16);
+			salt_len++;
+		}
+
+		fscanf(input_file, "%*s = %d\n", &iteration_count);	// read C
+		fscanf(input_file, "%*s = %d\n", &k_len);			// read kLen
+		fscanf(input_file, "%*s = %d\n", &loop_count);			// read kLen / hLen
+
+		fprintf(output_file, "Password = ");
+		for(int i = 0 ; i < pw_len ; i++)
+			fprintf(output_file, "%c", password[i]);
+		fprintf(output_file, "\nSalt = ");
+		for(int i = 0 ; i < salt_len ; i++)
+			fprintf(output_file, "%02x", salt[i]);
+		fprintf(output_file, "\n");
+		fprintf(output_file, "IterationCount = %d\n", iteration_count);
+		fprintf(output_file, "kLen = %d\n", k_len);
+		fprintf(output_file, "loopCount = %d\n\n\n", loop_count);
+
+		lsh_pbkdf_digest(algtype, password, salt, pw_len, salt_len, iteration_count, loop_count, k_len, hash_len, output_file);
+
+		fclose(input_file);
+		fclose(output_file);
+	}
+
 	printf("PBKDF test drive \n");
 }
 

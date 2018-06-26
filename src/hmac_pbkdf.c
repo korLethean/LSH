@@ -12,6 +12,8 @@ lsh_err hmac_pbkdf_ctr_digest(lsh_type algtype, int loop_count, lsh_u8 output)
 	lsh_err result;
 	lsh_u8 *input;
 
+
+
 	return result;
 }
 
@@ -38,7 +40,7 @@ lsh_err hmac_kdf_digest(int mode, lsh_type algtype, lsh_u8 *Ki, int Ki_len, lsh_
 
 	n = ceil((double)len / (double) hash_len);
 
-	//malloc
+	digest = (lsh_u8*) malloc(sizeof(lsh_u8) * len);
 
 	if(mode == CTR_MODE)
 	{
@@ -60,6 +62,8 @@ lsh_err hmac_kdf_digest(int mode, lsh_type algtype, lsh_u8 *Ki, int Ki_len, lsh_
 	}
 	else
 		printf("unknown mode \n");
+
+	free(digest);
 
 	return result;
 }

@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include "../include/hmac_pbkdf.h"
 
-lsh_err hmac_kdf_ctr_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 *Ki, int Ki_len, lsh_u8 *label, int label_len, lsh_u8 *context, int ct_len, lsh_uint len, lsh_u8 output, FILE *fp)
+lsh_err hmac_kdf_ctr_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 *Ki, int Ki_len, lsh_u8 *label, int label_len, lsh_u8 *context, int ct_len, lsh_uint len, lsh_u8 *output, FILE *fp)
 {
 	lsh_err result;
 	lsh_u8 *input;
@@ -28,14 +28,14 @@ lsh_err hmac_kdf_ctr_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8
 	return result;
 }
 
-lsh_err hmac_kdf_fb_digest(lsh_type algtype, int loop_count, lsh_u8 output, FILE *fp)
+lsh_err hmac_kdf_fb_digest(lsh_type algtype, int loop_count, lsh_u8 *output, FILE *fp)
 {
 	lsh_err result;
 
 	return result;
 }
 
-lsh_err hmac_kdf_dp_digest(lsh_type algtype, int loop_count, lsh_u8 output, FILE *fp)
+lsh_err hmac_kdf_dp_digest(lsh_type algtype, int loop_count, lsh_u8 *output, FILE *fp)
 {
 	lsh_err result;
 

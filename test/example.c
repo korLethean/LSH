@@ -1847,12 +1847,80 @@ void hmac_kdf_ctr_test_drive()
 
 void hmac_kdf_fb_test_drive()
 {
+	lsh_type algtype;
+	lsh_uint r;
+	lsh_u8 ki[256];
+	int ki_size;
+	lsh_u8 label[512];
+	int label_size;
+	lsh_u8 context[512];
+	int context_size;
+	lsh_uint len;
+	lsh_uint hash_len;
+
+	algtype = LSH_TYPE_256_256;
+	hash_len = LSH_GET_HASHBYTE(algtype);
+
+	ki[0] = 0x12;
+	ki[1] = 0x34;
+	ki[2] = 0x56;
+	ki_size = 3;
+
+	label[0] = 0xaa;
+	label[1] = 0xbb;
+	label[2] = 0xcc;
+	label_size = 3;
+
+	context[0] = 0x11;
+	context[1] = 0x22;
+	context[2] = 0x33;
+	context_size = 3;
+
+	r = 8;
+
+	len = 512;
+
+	hmac_kdf_digest(FB_MODE, algtype, ki, ki_size, label, label_size, context, context_size, r, len, hash_len, NULL);
 
 	printf("HMAC KDF FB mode test finished \n");
 }
 
 void hamc_kdf_dp_test_drive()
 {
+	lsh_type algtype;
+	lsh_uint r;
+	lsh_u8 ki[256];
+	int ki_size;
+	lsh_u8 label[512];
+	int label_size;
+	lsh_u8 context[512];
+	int context_size;
+	lsh_uint len;
+	lsh_uint hash_len;
+
+	algtype = LSH_TYPE_256_256;
+	hash_len = LSH_GET_HASHBYTE(algtype);
+
+	ki[0] = 0x12;
+	ki[1] = 0x34;
+	ki[2] = 0x56;
+	ki_size = 3;
+
+	label[0] = 0xaa;
+	label[1] = 0xbb;
+	label[2] = 0xcc;
+	label_size = 3;
+
+	context[0] = 0x11;
+	context[1] = 0x22;
+	context[2] = 0x33;
+	context_size = 3;
+
+	r = 8;
+
+	len = 512;
+
+	hmac_kdf_digest(DP_MODE, algtype, ki, ki_size, label, label_size, context, context_size, r, len, hash_len, NULL);
 
 	printf("HMAC KDF DP mode test finished \n");
 }
@@ -1870,8 +1938,8 @@ int main()
 	//hmac_drbg_lsh_testvector_no_pr();
 	//lsh_pbkdf_test_drive();
 	hmac_kdf_ctr_test_drive();
-	//hmac_kdf_fb_test_drive();
-	//hamc_kdf_dp_test_drive();
+	hmac_kdf_fb_test_drive();
+	hamc_kdf_dp_test_drive();
 
 	return 0;
 }

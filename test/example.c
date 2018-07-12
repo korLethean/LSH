@@ -1707,8 +1707,8 @@ void lsh_pbkdf_test_drive()
 			os = -1;
 			continue;
 		}
-		sprintf(input_file_name, "PBKDF_test/PBKDF_LSH-%d_%d.txt", is_ary[is], os_ary[os]);
-		sprintf(output_file_name, "PBKDF_test/PBKDF_LSH-%d_%d_rsp.txt", is_ary[is], os_ary[os]);
+		sprintf(input_file_name, "PBKDF_test/reference/PBKDF_LSH-%d_%d.txt", is_ary[is], os_ary[os]);
+		sprintf(output_file_name, "PBKDF_test/reference/PBKDF_LSH-%d_%d_rsp.txt", is_ary[is], os_ary[os]);
 		input_file = fopen(input_file_name, "r");
 		output_file = fopen(output_file_name, "w");
 		if(input_file == NULL)
@@ -1936,10 +1936,10 @@ int main()
 	//drbg_lsh_testvector_no_pr();
 	//hmac_drbg_lsh_testvector_pr();
 	//hmac_drbg_lsh_testvector_no_pr();
-	//lsh_pbkdf_test_drive();
-	hmac_kdf_ctr_test_drive();
-	hmac_kdf_fb_test_drive();
-	hamc_kdf_dp_test_drive();
+	lsh_pbkdf_test_drive();
+	//hmac_kdf_ctr_test_drive();
+	//hmac_kdf_fb_test_drive();
+	//hamc_kdf_dp_test_drive();
 
 	return 0;
 }

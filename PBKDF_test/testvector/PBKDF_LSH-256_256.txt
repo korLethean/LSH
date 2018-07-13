@@ -201,8 +201,8 @@ Password = +re?QpG5%u
 Salt = DCF710785CC9DF77543FA9D835D19478
 KLen = 1600
 
-[PRF = HMAC-SHA256]
-[Iteration = 4096]
+Algo_ID = PBKDF_LSH-256_256
+IterationCount = 4096
 
 COUNT = 40
 Password = !ac#r7@Gm+wqwnckpw4%MvNV

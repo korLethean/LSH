@@ -201,8 +201,8 @@ Password = CwNgv%,$
 Salt = 49274EC412C1DA4D29A9DF4D444A68AA
 KLen = 1600
 
-[PRF = HMAC-SHA384]
-[Iteration = 4096]
+Algo_ID = PBKDF_LSH-512_384
+IterationCount = 4096
 
 COUNT = 40
 Password = ATueVKOca"iPqmX591

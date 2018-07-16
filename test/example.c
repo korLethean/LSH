@@ -1897,6 +1897,14 @@ void lsh_pbkdf_testvector()
 
 		while(!feof(input_file))
 		{
+			if(count == 39)
+			{
+				fgets(read_line, MAX_READ_LEN, input_file);	// skip line
+				fgets(read_line, MAX_READ_LEN, input_file);	// read count
+				str_to_int = &read_line[17];
+				iteration_count = atoi(str_to_int);
+				fgets(read_line, MAX_READ_LEN, input_file);	// skip line
+			}
 			fgets(read_line, MAX_READ_LEN, input_file);	// read count
 			str_to_int = &read_line[8];
 			count = atoi(str_to_int);
@@ -1928,7 +1936,7 @@ void lsh_pbkdf_testvector()
 				fprintf(output_file, "%02x", salt[i]);
 			fprintf(output_file, "\n");
 			fprintf(output_file, "KLen = %d\n", k_len);
-			lsh_pbkdf_digest(algtype, password, salt, pw_len, salt_len, iteration_count, loop_count, k_len, hash_len, output_file, true);
+			//lsh_pbkdf_digest(algtype, password, salt, pw_len, salt_len, iteration_count, loop_count, k_len, hash_len, output_file, true);
 			fprintf(output_file, "\n");
 
 			fgets(read_line, MAX_READ_LEN, input_file);	// skip line
@@ -1945,6 +1953,11 @@ void lsh_pbkdf_testvector()
 
 void hmac_kdf_ctr_test_drive()
 {
+	FILE *input_file, *output_file;
+	char input_file_name[MAX_FILE_NAME_LEN], output_file_name[MAX_FILE_NAME_LEN];
+
+	lsh_u8 read_line[MAX_DATA_LEN];
+
 	lsh_type algtype;
 	lsh_uint r;
 	lsh_u8 ki[256];
@@ -1960,37 +1973,93 @@ void hmac_kdf_ctr_test_drive()
 	int is_ary[2] = {256, 512};
 	int os_ary[4] = {224, 256, 384, 512};
 
-	int r, w;
+	int read, write;
 
-	for(is = 0, os = 0 ; os < 4 ; os++)
+	lsh_u8 *str_to_int;
+
+/*	for(is = 0, os = 0 ; os < 4 ; os++)
 	{
-		if(is == 0 && os == 2)
+		if(!is && os == 2)
 		{
 			is = 1;
 			os = -1;
 			continue;
+		}*/ is = 0;
+		os = 1;
+
+		sprintf(input_file_name, "HMAC_KDF_CTR_test/HMAC_KDF_CTRmode_LSH-%d_%d.txt", is_ary[is], os_ary[os]);
+		sprintf(output_file_name, "HMAC_KDF_CTR_test/HMAC_KDF_CTRmode_LSH-%d_%d_rsp.txt", is_ary[is], os_ary[os]);
+		input_file = fopen(input_file_name, "r");
+		output_file = fopen(output_file_name, "w");
+
+		if(input_file == NULL)
+		{
+			printf("file does not exist \n");
+			return;
 		}
-	}
-	ki[0] = 0x12;
-	ki[1] = 0x34;
-	ki[2] = 0x56;
-	ki_size = 3;
+		else
+			printf("test data from: %s \n", input_file_name);
 
-	label[0] = 0xaa;
-	label[1] = 0xbb;
-	label[2] = 0xcc;
-	label_size = 3;
+		if(!is)
+		{
+			if(os == 0)
+				algtype = LSH_TYPE_256_224;
+			else
+				algtype = LSH_TYPE_256_256;
+		}
+		else
+		{
+			if(os == 0)
+				algtype = LSH_TYPE_512_224;
+			else if(os == 1)
+				algtype = LSH_TYPE_512_256;
+			else if(os == 2)
+				algtype = LSH_TYPE_512_384;
+			else
+				algtype = LSH_TYPE_512_512;
+		}
 
-	context[0] = 0x11;
-	context[1] = 0x22;
-	context[2] = 0x33;
-	context_size = 3;
+		hash_len = LSH_GET_HASHBYTE(algtype);
 
-	r = 8;
 
-	len = 512;
+		fgets(read_line, MAX_READ_LEN, input_file);	// skip algtype
+		fgets(read_line, MAX_READ_LEN, input_file);	// read line
 
-	hmac_kdf_digest(CTR_MODE, algtype, ki, ki_size, label, label_size, context, context_size, r, len, hash_len, NULL);
+		for(int i = 0 ; i < 2 ; i++)
+		{
+			fgets(read_line, MAX_READ_LEN, input_file);	// read r
+			str_to_int = &read_line[4];
+			r = atoi(str_to_int);
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// read ki
+			ki_size = 0;
+			for(read = 5, write = 0 ; r < strlen(read_line) - 1 ; read += 2)
+			{
+				lsh_u8 temp_arr[3] = {read_line[r], read_line[r + 1], '\0'};
+				ki[write++] = strtol(temp_arr, NULL, 16);
+				ki_size++;
+			}
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// read label
+			label_size = 0;
+			for(read = 8, write = 0 ; r < strlen(read_line) - 1 ; read++)
+			{
+				lsh_u8 temp_arr[3] = {read_line[r], read_line[r + 1], '\0'};
+				label[write++] = strtol(temp_arr, NULL, 16);
+				label_size++;
+			}
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// read len
+			{
+				lsh_u8 temp_arr[5] = {read_line[0], read_line[1], read_line[2], read_line[4], '\0'};
+				len = strtol(temp_arr, NULL, 16);
+			}
+			fgets(read_line, MAX_READ_LEN, input_file);	// read line
+
+
+			hmac_kdf_digest(CTR_MODE, algtype, ki, ki_size, label, label_size, context, context_size, r, len, hash_len, NULL);
+		}
+//	}
 
 	printf("HMAC KDF CTR mode test finished \n");
 }

@@ -9,9 +9,9 @@
 
 #define KEY_MAX_SIZE 128
 
-lsh_err lsh_pbkdf_gen(lsh_type algtype, int hash_len, lsh_u8 *U, lsh_uint size_u, lsh_u8 *T, int t_index, int t_num, lsh_u8 *password, lsh_uint pass_size, lsh_uint iteration_count, FILE *fp)
+lsh_err lsh_pbkdf_gen(lsh_type algtype, int hash_len, lsh_u8 *U, lsh_uint size_u, lsh_u8 *T, int t_index, int t_num, lsh_u8 *password, lsh_uint pass_size, lsh_uint iteration_count, FILE *fp, bool tv)
 {
-	lsh_err result;
+	lsh_err result = LSH_SUCCESS;
 	int index = t_index;
 
 	for(int i = 0 ; i < iteration_count ; i++)
@@ -27,7 +27,7 @@ lsh_err lsh_pbkdf_gen(lsh_type algtype, int hash_len, lsh_u8 *U, lsh_uint size_u
 			T[index++] ^=  U[j];
 		index = t_index;
 
-		if(i < 3 || i > iteration_count - 4)
+		if((i < 3 || i > iteration_count - 4) && !tv)
 		{
 			fprintf(fp, "U%d = ", i + 1);
 			for(int j = 0 ; j < hash_len ; j++)
@@ -40,12 +40,13 @@ lsh_err lsh_pbkdf_gen(lsh_type algtype, int hash_len, lsh_u8 *U, lsh_uint size_u
 
 		index = t_index;
 	}
-	fprintf(fp, "\n");
+	if(!tv)
+		fprintf(fp, "\n");
 
 	return result;
 }
 
-lsh_err lsh_pbkdf_digest(lsh_type algtype, lsh_u8 *password, lsh_u8 *salt, int pass_size, int salt_size, lsh_uint iteration_count, lsh_uint loop_count, lsh_uint key_len, lsh_uint hash_len, FILE *fp)
+lsh_err lsh_pbkdf_digest(lsh_type algtype, lsh_u8 *password, lsh_u8 *salt, int pass_size, int salt_size, lsh_uint iteration_count, lsh_uint loop_count, lsh_uint key_len, lsh_uint hash_len, FILE *fp, bool tv)
 {
 	lsh_err result;
 
@@ -79,19 +80,22 @@ lsh_err lsh_pbkdf_digest(lsh_type algtype, lsh_u8 *password, lsh_u8 *salt, int p
 		U[w++] = 0;
 		U[w] = i + 1;
 		size_u = salt_size + 4;
-		/********** outer loop OUTPUT **********/
-		fprintf(fp, "U0 = ");
-		for(int j = 0 ; j < size_u ; j++)
-			fprintf(fp, "%02x", U[j]);
-		fprintf(fp, "\n\n");
+		/********* outer loop OUTPUT *********/
+		if(!tv)
+		{
+			fprintf(fp, "U0 = ");
+			for(int j = 0 ; j < size_u ; j++)
+				fprintf(fp, "%02x", U[j]);
+			fprintf(fp, "\n\n");
+		}
 
-		result = lsh_pbkdf_gen(algtype, hash_len, U, size_u, T, t_index, i + 1, password, pass_size, iteration_count, fp);
+		result = lsh_pbkdf_gen(algtype, hash_len, U, size_u, T, t_index, i + 1, password, pass_size, iteration_count, fp, tv);
 		if(result != LSH_SUCCESS)
 			return result;
 	}
 
 	fprintf(fp, "MK = ");
-	for(int i = 0 ; i < size_t ; i++)
+	for(int i = 0 ; i < key_len ; i++)
 		fprintf(fp, "%02x", T[i]);
 	fprintf(fp, "\n");
 

@@ -1897,14 +1897,6 @@ void lsh_pbkdf_testvector()
 
 		while(!feof(input_file))
 		{
-			if(count == 39)
-			{
-				fgets(read_line, MAX_READ_LEN, input_file);	// skip line
-				fgets(read_line, MAX_READ_LEN, input_file);	// read count
-				str_to_int = &read_line[17];
-				iteration_count = atoi(str_to_int);
-				fgets(read_line, MAX_READ_LEN, input_file);	// skip line
-			}
 			fgets(read_line, MAX_READ_LEN, input_file);	// read count
 			str_to_int = &read_line[8];
 			count = atoi(str_to_int);
@@ -1927,7 +1919,7 @@ void lsh_pbkdf_testvector()
 			}
 			fgets(read_line, MAX_READ_LEN, input_file);	// read kLen
 			str_to_int = &read_line[7];
-			k_len = atoi(str_to_int) / 8;
+			k_len = atoi(str_to_int);
 
 			fprintf(output_file, "COUNT = %d\n", count);
 			fprintf(output_file, "Password = %s\n", password);
@@ -1936,7 +1928,7 @@ void lsh_pbkdf_testvector()
 				fprintf(output_file, "%02x", salt[i]);
 			fprintf(output_file, "\n");
 			fprintf(output_file, "KLen = %d\n", k_len);
-			lsh_pbkdf_digest(algtype, password, salt, pw_len, salt_len, iteration_count, loop_count, k_len, hash_len, output_file, true);
+			lsh_pbkdf_digest(algtype, password, salt, pw_len, salt_len, iteration_count, loop_count, k_len / 8, hash_len, output_file, true);
 			fprintf(output_file, "\n");
 
 			fgets(read_line, MAX_READ_LEN, input_file);	// skip line

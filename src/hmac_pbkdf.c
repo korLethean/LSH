@@ -104,8 +104,16 @@ lsh_err hmac_kdf_fb_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 
 	k_temp = (lsh_u8*) malloc(sizeof(lsh_u8) * hash_len);
 	for(int i = 0 ; i < input_size ; i++)
 		input[i] = '\0';	// initializing input
-	for(int i = 0 ; i < hash_len ; i++)
-		k_temp[i] = '\0';		// initailizing key
+	if(iv_len)				// initailizing key
+	{
+		for(int i = 0 ; i < hash_len ; i++)
+			k_temp[i] = iv[i];
+	}
+	else
+	{
+		for(int i = 0 ; i < hash_len ; i++)
+			k_temp[i] = '\0';
+	}
 
 	temp_index = hash_len;				// skip k-size array
 	if(byte_r)							// skip array when r != 0
@@ -126,8 +134,10 @@ lsh_err hmac_kdf_fb_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 
 			input[temp_index++] = k_temp[j];	// feedback Ki
 		if(byte_r)								// || [i]2
 		{
-			for(temp_index = hash_len ; temp_index < byte_r - 1; temp_index++)
-				input[temp_index] = 0;
+			int flag = byte_r - 1;
+			temp_index = hash_len;
+			while(flag--)
+				input[temp_index++] = 0;
 			input[temp_index] = i + 1;
 		}
 

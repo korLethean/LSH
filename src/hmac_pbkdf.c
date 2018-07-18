@@ -59,6 +59,15 @@ lsh_err hmac_kdf_ctr_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8
 			printf("%02x", k_temp[j]);
 		printf("\n");
 
+		fprintf(fp, "Input = ");
+		for(int k = 0 ; k < input_size ; k++)
+			fprintf(fp, "%02x", input[k]);
+		fprintf(fp, "\n");
+		fprintf(fp, "Result = ");
+		for(int k = 0 ; k < hash_len ; k++)
+			fprintf(fp, "%02x", k_temp[k]);
+		fprintf(fp, "\n\n");
+
 		for(int j = 0 ; j < hash_len ; j++)
 		{
 			if(result_index == len)
@@ -136,6 +145,15 @@ lsh_err hmac_kdf_fb_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 
 			printf("%02x", k_temp[j]);
 		printf("\n");
 
+		fprintf(fp, "Input = ");
+		for(int k = 0 ; k < input_size ; k++)
+			fprintf(fp, "%02x", input[k]);
+		fprintf(fp, "\n");
+		fprintf(fp, "Result = ");
+		for(int k = 0 ; k < hash_len ; k++)
+			fprintf(fp, "%02x", k_temp[k]);
+		fprintf(fp, "\n\n");
+
 		for(int j = 0 ; j < hash_len ; j++)
 		{
 			if(result_index == len)
@@ -206,6 +224,11 @@ lsh_err hmac_kdf_dp_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 
 			printf("%02x", a_temp[j]);
 		printf("\n");
 
+		fprintf(fp, "Input1 = ");
+		for(int k = 0 ; k < a_size ; k++)
+			fprintf(fp, "%02x", a_temp[k]);
+		fprintf(fp, "\n");
+
 		if(i)
 		{
 			result = hmac_lsh_digest(algtype, Ki, Ki_len, a_temp, a_size, a_temp);
@@ -224,6 +247,11 @@ lsh_err hmac_kdf_dp_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 
 		for(int j = 0 ; j < hash_len ; j++)
 			printf("%02x", a_temp[j]);
 		printf("\n");
+
+		fprintf(fp, "A(%d) = ", i + 1);
+		for(int k = 0 ; k < hash_len ; k++)
+			fprintf(fp, "%02x", a_temp[k]);
+		fprintf(fp, "\n");
 
 		temp_index = 0;
 		for(int j = 0 ; j < hash_len ; j++)
@@ -249,6 +277,15 @@ lsh_err hmac_kdf_dp_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 
 			printf("%02x", k_temp[j]);
 		printf("\n");
 
+		fprintf(fp, "Input2 = ");
+		for(int k = 0 ; k < input_size ; k++)
+			fprintf(fp, "%02x", input[k]);
+		fprintf(fp, "\n");
+		fprintf(fp, "K(%d) = ", i + 1);
+		for(int k = 0 ; k < hash_len ; k++)
+			fprintf(fp, "%02x", k_temp[k]);
+		fprintf(fp, "\n");
+
 		for(int j = 0 ; j < hash_len ; j++)
 		{
 			if(result_index == len)
@@ -269,7 +306,7 @@ lsh_err hmac_kdf_dp_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 
 	return result;
 }
 
-lsh_err hmac_kdf_digest(int mode, lsh_type algtype, lsh_u8 *Ki, int Ki_len, lsh_u8 *label, int label_len, lsh_u8 *context, int context_len, lsh_uint r, lsh_uint len, lsh_uint hash_len, FILE *fp)
+lsh_err hmac_kdf_digest(int mode, lsh_type algtype, lsh_u8 *Ki, int Ki_len, lsh_u8 *iv, int iv_len, lsh_u8 *label, int label_len, lsh_u8 *context, int context_len, lsh_uint r, lsh_uint len, lsh_uint hash_len, FILE *fp)
 {
 	lsh_err result;
 	lsh_u8 *k_output;
@@ -281,9 +318,11 @@ lsh_err hmac_kdf_digest(int mode, lsh_type algtype, lsh_u8 *Ki, int Ki_len, lsh_
 
 	n = ceil((double)len_byte / (double) hash_byte);
 
-	k_output = (lsh_u8*) malloc(sizeof(lsh_u8) * len);
-	for(int i = 0 ; i < hash_len ; i++)
+	k_output = (lsh_u8*) malloc(sizeof(lsh_u8) * len_byte);
+	for(int i = 0 ; i < len_byte ; i++)
 		k_output[i] = '\0';		// initializing k_output
+
+	fprintf(fp, "n = %d\n\n", (int) n);
 
 	if(mode == CTR_MODE)
 	{
@@ -305,6 +344,11 @@ lsh_err hmac_kdf_digest(int mode, lsh_type algtype, lsh_u8 *Ki, int Ki_len, lsh_
 	}
 	else
 		printf("unknown mode \n");
+
+	fprintf(fp, "K0 = ");
+	for(int i = 0 ; i < len_byte ; i++)
+		fprintf(fp, "%02x", k_output[i]);
+	fprintf(fp, "\n");
 
 	free(k_output);
 

@@ -87,7 +87,7 @@ lsh_err hmac_kdf_ctr_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8
 	return result;
 }
 
-lsh_err hmac_kdf_fb_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 *Ki, int Ki_len, lsh_u8 *label, int label_len, lsh_u8 *context, int ct_len, lsh_uint len, lsh_uint hash_len, lsh_u8 *output, FILE *fp)
+lsh_err hmac_kdf_fb_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 *Ki, int Ki_len, lsh_u8 *iv, int iv_len, lsh_u8 *label, int label_len, lsh_u8 *context, int ct_len, lsh_uint len, lsh_uint hash_len, lsh_u8 *output, FILE *fp)
 {
 	lsh_err result;
 	lsh_u8 *input;
@@ -332,7 +332,7 @@ lsh_err hmac_kdf_digest(int mode, lsh_type algtype, lsh_u8 *Ki, int Ki_len, lsh_
 	}
 	else if(mode == FB_MODE)
 	{
-		result = hmac_kdf_fb_digest(algtype, (int) n, byte_r, Ki, Ki_len, label, label_len, context, context_len, len_byte, hash_byte, k_output, fp);
+		result = hmac_kdf_fb_digest(algtype, (int) n, byte_r, Ki, Ki_len, iv, iv_len, label, label_len, context, context_len, len_byte, hash_byte, k_output, fp);
 		if(result != LSH_SUCCESS)
 			return result;
 	}

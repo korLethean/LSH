@@ -277,8 +277,9 @@ lsh_err hmac_kdf_digest(int mode, lsh_type algtype, lsh_u8 *Ki, int Ki_len, lsh_
 
 	int byte_r = r / 8;
 	int len_byte = len / 8;
+	int hash_byte = hash_len / 8;
 
-	n = ceil((double)len_byte / (double) hash_len);
+	n = ceil((double)len_byte / (double) hash_byte);
 
 	k_output = (lsh_u8*) malloc(sizeof(lsh_u8) * len);
 	for(int i = 0 ; i < hash_len ; i++)
@@ -286,19 +287,19 @@ lsh_err hmac_kdf_digest(int mode, lsh_type algtype, lsh_u8 *Ki, int Ki_len, lsh_
 
 	if(mode == CTR_MODE)
 	{
-		result = hmac_kdf_ctr_digest(algtype, (int) n, byte_r, Ki, Ki_len, label, label_len, context, context_len, len_byte, hash_len, k_output, fp);
+		result = hmac_kdf_ctr_digest(algtype, (int) n, byte_r, Ki, Ki_len, label, label_len, context, context_len, len_byte, hash_byte, k_output, fp);
 		if(result != LSH_SUCCESS)
 			return result;
 	}
 	else if(mode == FB_MODE)
 	{
-		result = hmac_kdf_fb_digest(algtype, (int) n, byte_r, Ki, Ki_len, label, label_len, context, context_len, len_byte, hash_len, k_output, fp);
+		result = hmac_kdf_fb_digest(algtype, (int) n, byte_r, Ki, Ki_len, label, label_len, context, context_len, len_byte, hash_byte, k_output, fp);
 		if(result != LSH_SUCCESS)
 			return result;
 	}
 	else if(mode == DP_MODE)
 	{
-		result = hmac_kdf_dp_digest(algtype, (int) n, byte_r, Ki, Ki_len, label, label_len, context, context_len, len_byte, hash_len, k_output, fp);
+		result = hmac_kdf_dp_digest(algtype, (int) n, byte_r, Ki, Ki_len, label, label_len, context, context_len, len_byte, hash_byte, k_output, fp);
 		if(result != LSH_SUCCESS)
 			return result;
 	}

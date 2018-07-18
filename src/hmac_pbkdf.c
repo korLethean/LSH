@@ -188,6 +188,7 @@ lsh_err hmac_kdf_dp_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 
 	lsh_err result;
 	lsh_u8 *input;
 	lsh_u8 *k_temp;
+	lsh_u8 *k_saved;
 	lsh_u8 *a_temp;
 	lsh_u8 *a_iv;
 
@@ -203,6 +204,7 @@ lsh_err hmac_kdf_dp_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 
 
 	input = (lsh_u8*) malloc(sizeof(lsh_u8) * input_size);
 	k_temp = (lsh_u8*) malloc(sizeof(lsh_u8) * hash_len);
+	k_saved = (lsh_u8*) malloc(sizeof(lsh_u8) * hash_len * loop_count);
 	a_temp = (lsh_u8*) malloc(sizeof(lsh_u8) * hash_len);
 	a_iv = (lsh_u8*) malloc(sizeof(lsh_u8) * a_size);
 	for(int i = 0 ; i < input_size ; i++)
@@ -295,6 +297,9 @@ lsh_err hmac_kdf_dp_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 
 		if(result != LSH_SUCCESS)
 			return result;
 
+		for(int j = 0, k = hash_len * i ; j < hash_len ; j++)
+			k_saved[k++] = k_temp[j];
+
 		printf("output data number %d: ", i + 1);
 		for(int j = 0 ; j < hash_len ; j++)
 			printf("%02x", k_temp[j]);
@@ -308,17 +313,14 @@ lsh_err hmac_kdf_dp_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 
 		for(int k = 0 ; k < hash_len ; k++)
 			fprintf(fp, "%02x", k_temp[k]);
 		fprintf(fp, "\n");
-
-		for(int j = 0 ; j < hash_len ; j++)
-		{
-			if(result_index == len)
-				break;
-			output[result_index++] = k_temp[j];
-		}
 		fprintf(fp, "Result = ");
-
+		for(int k = 0 ; k < hash_len * (i + 1) ; k++)
+			fprintf(fp, "%02x", k_saved[k]);
 		fprintf(fp, "\n\n");
 	}
+
+	for(int j = 0 ; j < len ; j++)
+		output[result_index++] = k_saved[j];
 
 	printf("final output: ");
 	for(int i = 0 ; i < len ; i++)
@@ -329,6 +331,7 @@ lsh_err hmac_kdf_dp_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 
 	free(a_iv);
 	free(a_temp);
 	free(k_temp);
+	free(k_saved);
 
 	return result;
 }

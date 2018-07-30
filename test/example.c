@@ -1979,8 +1979,8 @@ void hmac_kdf_ctr_test_drive()
 			continue;
 		}
 
-		sprintf(input_file_name, "HMAC_KDF_CTR_test/HMAC_KDF_CTRmode_LSH-%d_%d.txt", is_ary[is], os_ary[os]);
-		sprintf(output_file_name, "HMAC_KDF_CTR_test/HMAC_KDF_CTRmode_LSH-%d_%d_rsp.txt", is_ary[is], os_ary[os]);
+		sprintf(input_file_name, "HMAC_KDF_CTR_test/reference/HMAC_KDF_CTRmode_LSH-%d_%d.txt", is_ary[is], os_ary[os]);
+		sprintf(output_file_name, "HMAC_KDF_CTR_test/reference/HMAC_KDF_CTRmode_LSH-%d_%d_rsp.txt", is_ary[is], os_ary[os]);
 		input_file = fopen(input_file_name, "r");
 		output_file = fopen(output_file_name, "w");
 
@@ -2139,8 +2139,8 @@ void hmac_kdf_fb_test_drive()
 			continue;
 		}
 
-		sprintf(input_file_name, "HMAC_KDF_FB_test/HMAC_KDF_FBmode_LSH-%d_%d.txt", is_ary[is], os_ary[os]);
-		sprintf(output_file_name, "HMAC_KDF_FB_test/HMAC_KDF_FBmode_LSH-%d_%d_rsp.txt", is_ary[is], os_ary[os]);
+		sprintf(input_file_name, "HMAC_KDF_FB_test/reference/HMAC_KDF_FBmode_LSH-%d_%d.txt", is_ary[is], os_ary[os]);
+		sprintf(output_file_name, "HMAC_KDF_FB_test/reference/HMAC_KDF_FBmode_LSH-%d_%d_rsp.txt", is_ary[is], os_ary[os]);
 		input_file = fopen(input_file_name, "r");
 		output_file = fopen(output_file_name, "w");
 
@@ -2311,8 +2311,8 @@ void hamc_kdf_dp_test_drive()
 			continue;
 		}
 
-		sprintf(input_file_name, "HMAC_KDF_DP_test/HMAC_KDF_DPmode_LSH-%d_%d.txt", is_ary[is], os_ary[os]);
-		sprintf(output_file_name, "HMAC_KDF_DP_test/HMAC_KDF_DPmode_LSH-%d_%d_rsp.txt", is_ary[is], os_ary[os]);
+		sprintf(input_file_name, "HMAC_KDF_DP_test/reference/HMAC_KDF_DPmode_LSH-%d_%d.txt", is_ary[is], os_ary[os]);
+		sprintf(output_file_name, "HMAC_KDF_DP_test/reference/HMAC_KDF_DPmode_LSH-%d_%d_rsp.txt", is_ary[is], os_ary[os]);
 		input_file = fopen(input_file_name, "r");
 		output_file = fopen(output_file_name, "w");
 

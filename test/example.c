@@ -2090,7 +2090,7 @@ void hmac_kdf_ctr_test_drive()
 			fprintf(output_file, "L = %04x\n", len);
 			fprintf(output_file, "h = %04x\n\n", hash_len);
 
-			hmac_kdf_digest(CTR_MODE, algtype, ki, ki_size, NULL, 0, label, label_size, context, context_size, r, len, hash_len, output_file);
+			hmac_kdf_digest(CTR_MODE, algtype, ki, ki_size, NULL, 0, label, label_size, context, context_size, r, len, hash_len, output_file, false);
 
 			fgets(read_line, MAX_READ_LEN, input_file);	// skip line
 			memset(ki, 0, 256);
@@ -2263,7 +2263,7 @@ void hmac_kdf_fb_test_drive()
 			fprintf(output_file, "L = %04x\n", len);
 			fprintf(output_file, "h = %04x\n\n", hash_len);
 
-			hmac_kdf_digest(FB_MODE, algtype, ki, ki_size, iv, iv_size, label, label_size, context, context_size, r, len, hash_len, output_file);
+			hmac_kdf_digest(FB_MODE, algtype, ki, ki_size, iv, iv_size, label, label_size, context, context_size, r, len, hash_len, output_file, false);
 
 			fgets(read_line, MAX_READ_LEN, input_file);	// skip line
 			memset(ki, 0, 256);
@@ -2422,7 +2422,7 @@ void hamc_kdf_dp_test_drive()
 			fprintf(output_file, "L = %04x\n", len);
 			fprintf(output_file, "h = %04x\n\n", hash_len);
 
-			hmac_kdf_digest(DP_MODE, algtype, ki, ki_size, NULL, 0, label, label_size, context, context_size, r, len, hash_len, output_file);
+			hmac_kdf_digest(DP_MODE, algtype, ki, ki_size, NULL, 0, label, label_size, context, context_size, r, len, hash_len, output_file, false);
 
 			fgets(read_line, MAX_READ_LEN, input_file);	// skip line
 			memset(ki, 0, 256);
@@ -2433,6 +2433,516 @@ void hamc_kdf_dp_test_drive()
 
 	printf("HMAC KDF DP mode test finished \n");
 }
+
+void hmac_kdf_ctr_testvector()
+{
+	FILE *input_file, *output_file;
+	char input_file_name[MAX_FILE_NAME_LEN], output_file_name[MAX_FILE_NAME_LEN];
+
+	lsh_u8 read_line[MAX_DATA_LEN];
+
+	lsh_type algtype;
+	lsh_uint r;
+	int count;
+	lsh_u8 ki[256];
+	int ki_size;
+	lsh_u8 label[512];
+	int label_size;
+	int label_byte;
+	lsh_u8 context[512];
+	int context_size;
+	int context_byte;
+	lsh_uint len;
+	lsh_uint hash_len;
+
+	int is, os;
+	int is_ary[2] = {256, 512};
+	int os_ary[4] = {224, 256, 384, 512};
+
+	int read, write;
+
+	for(is = 0, os = 0 ; os < 4 ; os++)
+	{
+		if(!is && os == 2)
+		{
+			is = 1;
+			os = -1;
+			continue;
+		}
+
+		sprintf(input_file_name, "HMAC_KDF_test/testvector/HMAC_KDF_CTR_test/HMAC_KDF_CTRmode_LSH-%d_%d.txt", is_ary[is], os_ary[os]);
+		sprintf(output_file_name, "HMAC_KDF_test/testvector/HMAC_KDF_CTR_test/HMAC_KDF_CTRmode_LSH-%d_%d_rsp.txt", is_ary[is], os_ary[os]);
+		input_file = fopen(input_file_name, "r");
+		output_file = fopen(output_file_name, "w");
+
+		if(input_file == NULL)
+		{
+			printf("file does not exist \n");
+			return;
+		}
+		else
+			printf("test data from: %s \n", input_file_name);
+
+		fgets(read_line, MAX_READ_LEN, input_file);	// read algtype
+		read_line[strlen(read_line) - 1] = '\0';
+
+		if(!strcmp(read_line, "Algo_ID = HMAC_KDF_CTRmode_LSH-256_224"))
+		{
+			algtype = LSH_TYPE_256_224;
+			fprintf(output_file, "Algo_ID = HMAC_KDF_CTRmode_LSH-256_224\n\n");
+		}
+		else if(!strcmp(read_line, "Algo_ID = HMAC_KDF_CTRmode_LSH-256_256"))
+		{
+			algtype = LSH_TYPE_256_256;
+			fprintf(output_file, "Algo_ID = HMAC_KDF_CTRmode_LSH-256_256\n\n");
+		}
+		else if(!strcmp(read_line, "Algo_ID = HMAC_KDF_CTRmode_LSH-512_224"))
+		{
+			algtype = LSH_TYPE_512_224;
+			fprintf(output_file, "Algo_ID = HMAC_KDF_CTRmode_LSH-512_224\n\n");
+		}
+		else if(!strcmp(read_line, "Algo_ID = HMAC_KDF_CTRmode_LSH-512_256"))
+		{
+			algtype = LSH_TYPE_512_256;
+			fprintf(output_file, "Algo_ID = HMAC_KDF_CTRmode_LSH-512_256\n\n");
+		}
+		else if(!strcmp(read_line, "Algo_ID = HMAC_KDF_CTRmode_LSH-512_384"))
+		{
+			algtype = LSH_TYPE_512_384;
+			fprintf(output_file, "Algo_ID = HMAC_KDF_CTRmode_LSH-512_384\n\n");
+		}
+		else if(!strcmp(read_line, "Algo_ID = HMAC_KDF_CTRmode_LSH-512_512"))
+		{
+			algtype = LSH_TYPE_512_512;
+			fprintf(output_file, "Algo_ID = HMAC_KDF_CTRmode_LSH-512_512\n\n");
+		}
+		else
+		{
+			printf("unknown algorithm type \n");
+			return;
+		}
+
+		fgets(read_line, MAX_READ_LEN, input_file);	// skip line
+		count = 40;
+		hash_len = LSH_GET_HASHBIT(algtype);
+
+		while(!feof(input_file))
+		{
+			if(count > 39)
+			{
+				count = 0;
+				fscanf(input_file, "%*s = %d\n", &r);	// read r
+				fprintf(output_file, "RLEN = %d\n\n", r);
+			}
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// skip line
+
+			fscanf(input_file, "%*s = %d\n", &len);		// read length
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// read ki
+			ki_size = 0;
+			for(read = 5, write = 0 ; read < strlen(read_line) - 1 ; read += 2)
+			{
+				lsh_u8 temp_arr[3] = {read_line[read], read_line[read + 1], '\0'};
+				ki[write++] = strtol(temp_arr, NULL, 16);
+				ki_size++;
+			}
+
+			fscanf(input_file, "%*s = %d\n", &label_size);	// read label length
+			label_byte = label_size / 8;
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// read label
+			for(read = 8, write = 0 ; read < strlen(read_line) - 1 ; read += 2)
+			{
+				lsh_u8 temp_arr[3] = {read_line[read], read_line[read + 1], '\0'};
+				label[write++] = strtol(temp_arr, NULL, 16);
+			}
+
+			fscanf(input_file, "%*s = %d\n", &context_size);// read context length
+			context_byte = context_size / 8;
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// read context
+			for(read = 10, write = 0 ; read < strlen(read_line) - 1 ; read += 2)
+			{
+				lsh_u8 temp_arr[3] = {read_line[read], read_line[read + 1], '\0'};
+				context[write++] = strtol(temp_arr, NULL, 16);
+			}
+
+			fprintf(output_file, "COUNT = %d\n", count++);
+			fprintf(output_file, "L = %d\n", len);
+			fprintf(output_file, "KI = ");
+			for(int i = 0 ; i < ki_size ; i++)
+				fprintf(output_file, "%02x", ki[i]);
+			fprintf(output_file, "\n");
+			fprintf(output_file, "LabelLen = %d\n", label_size);
+			fprintf(output_file, "Label = ");
+			for(int i = 0 ; i < label_byte ; i++)
+				fprintf(output_file, "%02x", label[i]);
+			fprintf(output_file, "\n");
+			fprintf(output_file, "ContextLen = %d\n", context_size);
+			fprintf(output_file, "Context = ");
+			for(int i = 0 ; i < context_byte ; i++)
+				fprintf(output_file, "%02x", context[i]);
+			fprintf(output_file, "\n");
+
+			hmac_kdf_digest(CTR_MODE, algtype, ki, ki_size, NULL, 0, label, label_byte, context, context_byte, r, len, hash_len, output_file, true);
+			fprintf(output_file, "\n");
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// skip line
+			memset(ki, 0, 256);
+			memset(label, 0, 512);
+			memset(context, 0, 512);
+		}
+	}
+
+	printf("HMAC KDF CTR mode testvector finished \n");
+}
+
+void hmac_kdf_fb_testvector()
+{
+	FILE *input_file, *output_file;
+	char input_file_name[MAX_FILE_NAME_LEN], output_file_name[MAX_FILE_NAME_LEN];
+
+	lsh_u8 read_line[MAX_DATA_LEN];
+
+	lsh_type algtype;
+	lsh_uint r;
+	int count;
+	lsh_u8 ki[256];
+	int ki_size;
+	lsh_u8 iv[256];
+	int iv_size;
+	int iv_byte;
+	lsh_u8 label[512];
+	int label_size;
+	int label_byte;
+	lsh_u8 context[512];
+	int context_size;
+	int context_byte;
+	lsh_uint len;
+	lsh_uint hash_len;
+
+	int is, os;
+	int is_ary[2] = {256, 512};
+	int os_ary[4] = {224, 256, 384, 512};
+
+	int read, write;
+
+	for(is = 0, os = 0 ; os < 4 ; os++)
+	{
+		if(!is && os == 2)
+		{
+			is = 1;
+			os = -1;
+			continue;
+		}
+
+		sprintf(input_file_name, "HMAC_KDF_test/testvector/HMAC_KDF_FB_test/HMAC_KDF_FBmode_LSH-%d_%d.txt", is_ary[is], os_ary[os]);
+		sprintf(output_file_name, "HMAC_KDF_test/testvector/HMAC_KDF_FB_test/HMAC_KDF_FBmode_LSH-%d_%d_rsp.txt", is_ary[is], os_ary[os]);
+		input_file = fopen(input_file_name, "r");
+		output_file = fopen(output_file_name, "w");
+
+		if(input_file == NULL)
+		{
+			printf("file does not exist \n");
+			return;
+		}
+		else
+			printf("test data from: %s \n", input_file_name);
+
+		fgets(read_line, MAX_READ_LEN, input_file);	// read algtype
+		read_line[strlen(read_line) - 1] = '\0';
+
+		if(!strcmp(read_line, "Algo_ID = HMAC_KDF_FBmode_LSH-256_224"))
+		{
+			algtype = LSH_TYPE_256_224;
+			fprintf(output_file, "Algo_ID = HMAC_KDF_FBmode_LSH-256_224\n\n");
+		}
+		else if(!strcmp(read_line, "Algo_ID = HMAC_KDF_FBmode_LSH-256_256"))
+		{
+			algtype = LSH_TYPE_256_256;
+			fprintf(output_file, "Algo_ID = HMAC_KDF_FBmode_LSH-256_256\n\n");
+		}
+		else if(!strcmp(read_line, "Algo_ID = HMAC_KDF_FBmode_LSH-512_224"))
+		{
+			algtype = LSH_TYPE_512_224;
+			fprintf(output_file, "Algo_ID = HMAC_KDF_FBmode_LSH-512_224\n\n");
+		}
+		else if(!strcmp(read_line, "Algo_ID = HMAC_KDF_FBmode_LSH-512_256"))
+		{
+			algtype = LSH_TYPE_512_256;
+			fprintf(output_file, "Algo_ID = HMAC_KDF_FBmode_LSH-512_256\n\n");
+		}
+		else if(!strcmp(read_line, "Algo_ID = HMAC_KDF_FBmode_LSH-512_384"))
+		{
+			algtype = LSH_TYPE_512_384;
+			fprintf(output_file, "Algo_ID = HMAC_KDF_FBmode_LSH-512_384\n\n");
+		}
+		else if(!strcmp(read_line, "Algo_ID = HMAC_KDF_FBmode_LSH-512_512"))
+		{
+			algtype = LSH_TYPE_512_512;
+			fprintf(output_file, "Algo_ID = HMAC_KDF_FBmode_LSH-512_512\n\n");
+		}
+		else
+		{
+			printf("unknown algorithm type \n");
+			return;
+		}
+
+		fgets(read_line, MAX_READ_LEN, input_file);	// skip line
+		count = 40;
+		hash_len = LSH_GET_HASHBIT(algtype);
+
+		while(!feof(input_file))
+		{
+			if(count > 39)
+			{
+				count = 0;
+				fscanf(input_file, "%*s = %d\n", &r);	// read r
+				fprintf(output_file, "RLEN = %d\n\n", r);
+			}
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// skip line
+
+			fscanf(input_file, "%*s = %d\n", &len);		// read length
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// read ki
+			ki_size = 0;
+			for(read = 5, write = 0 ; read < strlen(read_line) - 1 ; read += 2)
+			{
+				lsh_u8 temp_arr[3] = {read_line[read], read_line[read + 1], '\0'};
+				ki[write++] = strtol(temp_arr, NULL, 16);
+				ki_size++;
+			}
+
+			fscanf(input_file, "%*s = %d\n", &iv_size);		// read iv length
+			iv_byte = iv_size / 8;
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// read iv
+			for(read = 5, write = 0 ; read < strlen(read_line) - 1 ; read += 2)
+			{
+				lsh_u8 temp_arr[3] = {read_line[read], read_line[read + 1], '\0'};
+				iv[write++] = strtol(temp_arr, NULL, 16);
+			}
+
+			fscanf(input_file, "%*s = %d\n", &label_size);	// read label length
+			label_byte = label_size / 8;
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// read label
+			for(read = 8, write = 0 ; read < strlen(read_line) - 1 ; read += 2)
+			{
+				lsh_u8 temp_arr[3] = {read_line[read], read_line[read + 1], '\0'};
+				label[write++] = strtol(temp_arr, NULL, 16);
+			}
+
+			fscanf(input_file, "%*s = %d\n", &context_size);// read context length
+			context_byte = context_size / 8;
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// read context
+			for(read = 10, write = 0 ; read < strlen(read_line) - 1 ; read += 2)
+			{
+				lsh_u8 temp_arr[3] = {read_line[read], read_line[read + 1], '\0'};
+				context[write++] = strtol(temp_arr, NULL, 16);
+			}
+
+			fprintf(output_file, "COUNT = %d\n", count++);
+			fprintf(output_file, "L = %d\n", len);
+			fprintf(output_file, "KI = ");
+			for(int i = 0 ; i < ki_size ; i++)
+				fprintf(output_file, "%02x", ki[i]);
+			fprintf(output_file, "\n");
+			fprintf(output_file, "IVLen = %d\n", iv_size);
+			for(int i = 0 ; i < iv_byte; i++)
+				fprintf(output_file, "%02x", iv[i]);
+			fprintf(output_file, "\n");
+			fprintf(output_file, "LabelLen = %d\n", label_size);
+			fprintf(output_file, "Label = ");
+			for(int i = 0 ; i < label_byte ; i++)
+				fprintf(output_file, "%02x", label[i]);
+			fprintf(output_file, "\n");
+			fprintf(output_file, "ContextLen = %d\n", context_size);
+			fprintf(output_file, "Context = ");
+			for(int i = 0 ; i < context_byte ; i++)
+				fprintf(output_file, "%02x", context[i]);
+			fprintf(output_file, "\n");
+
+			hmac_kdf_digest(CTR_MODE, algtype, ki, ki_size, iv, iv_byte, label, label_byte, context, context_byte, r, len, hash_len, output_file, true);
+			fprintf(output_file, "\n");
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// skip line
+			memset(ki, 0, 256);
+			memset(label, 0, 512);
+			memset(context, 0, 512);
+		}
+	}
+
+	printf("HMAC KDF FB mode testvector finished \n");
+}
+
+void hmac_kdf_dp_testvector()
+{
+	FILE *input_file, *output_file;
+	char input_file_name[MAX_FILE_NAME_LEN], output_file_name[MAX_FILE_NAME_LEN];
+
+	lsh_u8 read_line[MAX_DATA_LEN];
+
+	lsh_type algtype;
+	lsh_uint r;
+	int count;
+	lsh_u8 ki[256];
+	int ki_size;
+	lsh_u8 label[512];
+	int label_size;
+	int label_byte;
+	lsh_u8 context[512];
+	int context_size;
+	int context_byte;
+	lsh_uint len;
+	lsh_uint hash_len;
+
+	int is, os;
+	int is_ary[2] = {256, 512};
+	int os_ary[4] = {224, 256, 384, 512};
+
+	int read, write;
+
+	for(is = 0, os = 0 ; os < 4 ; os++)
+	{
+		if(!is && os == 2)
+		{
+			is = 1;
+			os = -1;
+			continue;
+		}
+
+		sprintf(input_file_name, "HMAC_KDF_test/testvector/HMAC_KDF_DP_test/HMAC_KDF_DPmode_LSH-%d_%d.txt", is_ary[is], os_ary[os]);
+		sprintf(output_file_name, "HMAC_KDF_test/testvector/HMAC_KDF_DP_test/HMAC_KDF_DPmode_LSH-%d_%d_rsp.txt", is_ary[is], os_ary[os]);
+		input_file = fopen(input_file_name, "r");
+		output_file = fopen(output_file_name, "w");
+
+		if(input_file == NULL)
+		{
+			printf("file does not exist \n");
+			return;
+		}
+		else
+			printf("test data from: %s \n", input_file_name);
+
+		fgets(read_line, MAX_READ_LEN, input_file);	// read algtype
+		read_line[strlen(read_line) - 1] = '\0';
+
+		if(!strcmp(read_line, "Algo_ID = HMAC_KDF_DPmode_LSH-256_224"))
+		{
+			algtype = LSH_TYPE_256_224;
+			fprintf(output_file, "Algo_ID = HMAC_KDF_DPmode_LSH-256_224\n\n");
+		}
+		else if(!strcmp(read_line, "Algo_ID = HMAC_KDF_DPmode_LSH-256_256"))
+		{
+			algtype = LSH_TYPE_256_256;
+			fprintf(output_file, "Algo_ID = HMAC_KDF_DPmode_LSH-256_256\n\n");
+		}
+		else if(!strcmp(read_line, "Algo_ID = HMAC_KDF_DPmode_LSH-512_224"))
+		{
+			algtype = LSH_TYPE_512_224;
+			fprintf(output_file, "Algo_ID = HMAC_KDF_DPmode_LSH-512_224\n\n");
+		}
+		else if(!strcmp(read_line, "Algo_ID = HMAC_KDF_DPmode_LSH-512_256"))
+		{
+			algtype = LSH_TYPE_512_256;
+			fprintf(output_file, "Algo_ID = HMAC_KDF_DPmode_LSH-512_256\n\n");
+		}
+		else if(!strcmp(read_line, "Algo_ID = HMAC_KDF_DPmode_LSH-512_384"))
+		{
+			algtype = LSH_TYPE_512_384;
+			fprintf(output_file, "Algo_ID = HMAC_KDF_DPmode_LSH-512_384\n\n");
+		}
+		else if(!strcmp(read_line, "Algo_ID = HMAC_KDF_DPmode_LSH-512_512"))
+		{
+			algtype = LSH_TYPE_512_512;
+			fprintf(output_file, "Algo_ID = HMAC_KDF_DPmode_LSH-512_512\n\n");
+		}
+		else
+		{
+			printf("unknown algorithm type \n");
+			return;
+		}
+
+		fgets(read_line, MAX_READ_LEN, input_file);	// skip line
+		count = 40;
+		hash_len = LSH_GET_HASHBIT(algtype);
+
+		while(!feof(input_file))
+		{
+			if(count > 39)
+			{
+				count = 0;
+				fscanf(input_file, "%*s = %d\n", &r);	// read r
+				fprintf(output_file, "RLEN = %d\n\n", r);
+			}
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// skip line
+
+			fscanf(input_file, "%*s = %d\n", &len);		// read length
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// read ki
+			ki_size = 0;
+			for(read = 5, write = 0 ; read < strlen(read_line) - 1 ; read += 2)
+			{
+				lsh_u8 temp_arr[3] = {read_line[read], read_line[read + 1], '\0'};
+				ki[write++] = strtol(temp_arr, NULL, 16);
+				ki_size++;
+			}
+
+			fscanf(input_file, "%*s = %d\n", &label_size);	// read label length
+			label_byte = label_size / 8;
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// read label
+			for(read = 8, write = 0 ; read < strlen(read_line) - 1 ; read += 2)
+			{
+				lsh_u8 temp_arr[3] = {read_line[read], read_line[read + 1], '\0'};
+				label[write++] = strtol(temp_arr, NULL, 16);
+			}
+
+			fscanf(input_file, "%*s = %d\n", &context_size);// read context length
+			context_byte = context_size / 8;
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// read context
+			for(read = 10, write = 0 ; read < strlen(read_line) - 1 ; read += 2)
+			{
+				lsh_u8 temp_arr[3] = {read_line[read], read_line[read + 1], '\0'};
+				context[write++] = strtol(temp_arr, NULL, 16);
+			}
+
+			fprintf(output_file, "COUNT = %d\n", count++);
+			fprintf(output_file, "L = %d\n", len);
+			fprintf(output_file, "KI = ");
+			for(int i = 0 ; i < ki_size ; i++)
+				fprintf(output_file, "%02x", ki[i]);
+			fprintf(output_file, "\n");
+			fprintf(output_file, "LabelLen = %d\n", label_size);
+			fprintf(output_file, "Label = ");
+			for(int i = 0 ; i < label_byte ; i++)
+				fprintf(output_file, "%02x", label[i]);
+			fprintf(output_file, "\n");
+			fprintf(output_file, "ContextLen = %d\n", context_size);
+			fprintf(output_file, "Context = ");
+			for(int i = 0 ; i < context_byte ; i++)
+				fprintf(output_file, "%02x", context[i]);
+			fprintf(output_file, "\n");
+
+			hmac_kdf_digest(CTR_MODE, algtype, ki, ki_size, NULL, 0, label, label_byte, context, context_byte, r, len, hash_len, output_file, true);
+			fprintf(output_file, "\n");
+
+			fgets(read_line, MAX_READ_LEN, input_file);	// skip line
+			memset(ki, 0, 256);
+			memset(label, 0, 512);
+			memset(context, 0, 512);
+		}
+	}
+
+	printf("HMAC KDF DP mode testvector finished \n");
+}
+
 
 int main()
 {
@@ -2449,6 +2959,9 @@ int main()
 	//hmac_kdf_ctr_test_drive();
 	//hmac_kdf_fb_test_drive();
 	//hamc_kdf_dp_test_drive();
+	//hmac_kdf_ctr_testvector();
+	//hmac_kdf_fb_testvector();
+	hmac_kdf_dp_testvector();
 
 	return 0;
 }

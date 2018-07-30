@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include "../include/hmac_pbkdf.h"
 
-lsh_err hmac_kdf_ctr_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 *Ki, int Ki_len, lsh_u8 *label, int label_len, lsh_u8 *context, int ct_len, lsh_uint len, lsh_uint hash_len, lsh_u8 *output, FILE *fp)
+lsh_err hmac_kdf_ctr_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 *Ki, int Ki_len, lsh_u8 *label, int label_len, lsh_u8 *context, int ct_len, lsh_uint len, lsh_uint hash_len, lsh_u8 *output, FILE *fp, bool tv)
 {
 	lsh_err result;
 	lsh_u8 *input;
@@ -59,14 +59,17 @@ lsh_err hmac_kdf_ctr_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8
 			printf("%02x", k_temp[j]);
 		printf("\n");
 
-		fprintf(fp, "Input = ");
-		for(int k = 0 ; k < input_size ; k++)
-			fprintf(fp, "%02x", input[k]);
-		fprintf(fp, "\n");
-		fprintf(fp, "Result = ");
-		for(int k = 0 ; k < hash_len ; k++)
-			fprintf(fp, "%02x", k_temp[k]);
-		fprintf(fp, "\n\n");
+		if(!tv)
+		{
+			fprintf(fp, "Input = ");
+			for(int k = 0 ; k < input_size ; k++)
+				fprintf(fp, "%02x", input[k]);
+			fprintf(fp, "\n");
+			fprintf(fp, "Result = ");
+			for(int k = 0 ; k < hash_len ; k++)
+				fprintf(fp, "%02x", k_temp[k]);
+			fprintf(fp, "\n\n");
+		}
 
 		for(int j = 0 ; j < hash_len ; j++)
 		{
@@ -87,7 +90,7 @@ lsh_err hmac_kdf_ctr_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8
 	return result;
 }
 
-lsh_err hmac_kdf_fb_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 *Ki, int Ki_len, lsh_u8 *iv, int iv_len, lsh_u8 *label, int label_len, lsh_u8 *context, int ct_len, lsh_uint len, lsh_uint hash_len, lsh_u8 *output, FILE *fp)
+lsh_err hmac_kdf_fb_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 *Ki, int Ki_len, lsh_u8 *iv, int iv_len, lsh_u8 *label, int label_len, lsh_u8 *context, int ct_len, lsh_uint len, lsh_uint hash_len, lsh_u8 *output, FILE *fp, bool tv)
 {
 	lsh_err result;
 	lsh_u8 *input;
@@ -155,14 +158,17 @@ lsh_err hmac_kdf_fb_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 
 			printf("%02x", k_temp[j]);
 		printf("\n");
 
-		fprintf(fp, "Input = ");
-		for(int k = 0 ; k < input_size ; k++)
-			fprintf(fp, "%02x", input[k]);
-		fprintf(fp, "\n");
-		fprintf(fp, "Result = ");
-		for(int k = 0 ; k < hash_len ; k++)
-			fprintf(fp, "%02x", k_temp[k]);
-		fprintf(fp, "\n\n");
+		if(!tv)
+		{
+			fprintf(fp, "Input = ");
+			for(int k = 0 ; k < input_size ; k++)
+				fprintf(fp, "%02x", input[k]);
+			fprintf(fp, "\n");
+			fprintf(fp, "Result = ");
+			for(int k = 0 ; k < hash_len ; k++)
+				fprintf(fp, "%02x", k_temp[k]);
+			fprintf(fp, "\n\n");
+		}
 
 		for(int j = 0 ; j < hash_len ; j++)
 		{
@@ -183,7 +189,7 @@ lsh_err hmac_kdf_fb_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 
 	return result;
 }
 
-lsh_err hmac_kdf_dp_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 *Ki, int Ki_len, lsh_u8 *label, int label_len, lsh_u8 *context, int ct_len, lsh_uint len, lsh_uint hash_len, lsh_u8 *output, FILE *fp)
+lsh_err hmac_kdf_dp_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 *Ki, int Ki_len, lsh_u8 *label, int label_len, lsh_u8 *context, int ct_len, lsh_uint len, lsh_uint hash_len, lsh_u8 *output, FILE *fp, bool tv)
 {
 	lsh_err result;
 	lsh_u8 *input;
@@ -240,10 +246,13 @@ lsh_err hmac_kdf_dp_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 
 				printf("%02x", a_iv[j]);
 			printf("\n");
 
-			fprintf(fp, "Input1 = ");
-			for(int k = 0 ; k < a_size ; k++)
-				fprintf(fp, "%02x", a_iv[k]);
-			fprintf(fp, "\n");
+			if(!tv)
+			{
+				fprintf(fp, "Input1 = ");
+				for(int k = 0 ; k < a_size ; k++)
+					fprintf(fp, "%02x", a_iv[k]);
+				fprintf(fp, "\n");
+			}
 
 			result = hmac_lsh_digest(algtype, Ki, Ki_len, a_iv, a_size, a_temp);
 			if(result != LSH_SUCCESS)
@@ -256,10 +265,13 @@ lsh_err hmac_kdf_dp_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 
 				printf("%02x", a_temp[j]);
 			printf("\n");
 
-			fprintf(fp, "Input1 = ");
-			for(int k = 0 ; k < hash_len ; k++)
-				fprintf(fp, "%02x", a_temp[k]);
-			fprintf(fp, "\n");
+			if(!tv)
+			{
+				fprintf(fp, "Input1 = ");
+				for(int k = 0 ; k < hash_len ; k++)
+					fprintf(fp, "%02x", a_temp[k]);
+				fprintf(fp, "\n");
+			}
 
 			result = hmac_lsh_digest(algtype, Ki, Ki_len, a_temp, hash_len, a_temp);
 			if(result != LSH_SUCCESS)
@@ -271,10 +283,13 @@ lsh_err hmac_kdf_dp_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 
 			printf("%02x", a_temp[j]);
 		printf("\n");
 
-		fprintf(fp, "A(%d) = ", i + 1);
-		for(int k = 0 ; k < hash_len ; k++)
-			fprintf(fp, "%02x", a_temp[k]);
-		fprintf(fp, "\n");
+		if(!tv)
+		{
+			fprintf(fp, "A(%d) = ", i + 1);
+			for(int k = 0 ; k < hash_len ; k++)
+				fprintf(fp, "%02x", a_temp[k]);
+			fprintf(fp, "\n");
+		}
 
 		temp_index = 0;
 		for(int j = 0 ; j < hash_len ; j++)
@@ -305,18 +320,21 @@ lsh_err hmac_kdf_dp_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 
 			printf("%02x", k_temp[j]);
 		printf("\n");
 
-		fprintf(fp, "Input2 = ");
-		for(int k = 0 ; k < input_size ; k++)
-			fprintf(fp, "%02x", input[k]);
-		fprintf(fp, "\n");
-		fprintf(fp, "K(%d) = ", i + 1);
-		for(int k = 0 ; k < hash_len ; k++)
-			fprintf(fp, "%02x", k_temp[k]);
-		fprintf(fp, "\n");
-		fprintf(fp, "Result = ");
-		for(int k = 0 ; k < hash_len * (i + 1) ; k++)
-			fprintf(fp, "%02x", k_saved[k]);
-		fprintf(fp, "\n\n");
+		if(!tv)
+		{
+			fprintf(fp, "Input2 = ");
+			for(int k = 0 ; k < input_size ; k++)
+				fprintf(fp, "%02x", input[k]);
+			fprintf(fp, "\n");
+			fprintf(fp, "K(%d) = ", i + 1);
+			for(int k = 0 ; k < hash_len ; k++)
+				fprintf(fp, "%02x", k_temp[k]);
+			fprintf(fp, "\n");
+			fprintf(fp, "Result = ");
+			for(int k = 0 ; k < hash_len * (i + 1) ; k++)
+				fprintf(fp, "%02x", k_saved[k]);
+			fprintf(fp, "\n\n");
+		}
 	}
 
 	for(int j = 0 ; j < len ; j++)
@@ -336,7 +354,7 @@ lsh_err hmac_kdf_dp_digest(lsh_type algtype, int loop_count, int byte_r, lsh_u8 
 	return result;
 }
 
-lsh_err hmac_kdf_digest(int mode, lsh_type algtype, lsh_u8 *Ki, int Ki_len, lsh_u8 *iv, int iv_len, lsh_u8 *label, int label_len, lsh_u8 *context, int context_len, lsh_uint r, lsh_uint len, lsh_uint hash_len, FILE *fp)
+lsh_err hmac_kdf_digest(int mode, lsh_type algtype, lsh_u8 *Ki, int Ki_len, lsh_u8 *iv, int iv_len, lsh_u8 *label, int label_len, lsh_u8 *context, int context_len, lsh_uint r, lsh_uint len, lsh_uint hash_len, FILE *fp, bool tv)
 {
 	lsh_err result;
 	lsh_u8 *k_output;
@@ -352,23 +370,24 @@ lsh_err hmac_kdf_digest(int mode, lsh_type algtype, lsh_u8 *Ki, int Ki_len, lsh_
 	for(int i = 0 ; i < len_byte ; i++)
 		k_output[i] = '\0';		// initializing k_output
 
-	fprintf(fp, "n = %d\n\n", (int) n);
+	if(!tv)
+		fprintf(fp, "n = %d\n\n", (int) n);
 
 	if(mode == CTR_MODE)
 	{
-		result = hmac_kdf_ctr_digest(algtype, (int) n, byte_r, Ki, Ki_len, label, label_len, context, context_len, len_byte, hash_byte, k_output, fp);
+		result = hmac_kdf_ctr_digest(algtype, (int) n, byte_r, Ki, Ki_len, label, label_len, context, context_len, len_byte, hash_byte, k_output, fp, tv);
 		if(result != LSH_SUCCESS)
 			return result;
 	}
 	else if(mode == FB_MODE)
 	{
-		result = hmac_kdf_fb_digest(algtype, (int) n, byte_r, Ki, Ki_len, iv, iv_len, label, label_len, context, context_len, len_byte, hash_byte, k_output, fp);
+		result = hmac_kdf_fb_digest(algtype, (int) n, byte_r, Ki, Ki_len, iv, iv_len, label, label_len, context, context_len, len_byte, hash_byte, k_output, fp, tv);
 		if(result != LSH_SUCCESS)
 			return result;
 	}
 	else if(mode == DP_MODE)
 	{
-		result = hmac_kdf_dp_digest(algtype, (int) n, byte_r, Ki, Ki_len, label, label_len, context, context_len, len_byte, hash_byte, k_output, fp);
+		result = hmac_kdf_dp_digest(algtype, (int) n, byte_r, Ki, Ki_len, label, label_len, context, context_len, len_byte, hash_byte, k_output, fp, tv);
 		if(result != LSH_SUCCESS)
 			return result;
 	}

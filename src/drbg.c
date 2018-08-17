@@ -378,7 +378,7 @@ lsh_err drbg_lsh_reseed(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy, int
 }
 
 
-lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy, int ent_size, const lsh_u8 *add_input, int add_size, int output_bits, int cycle, lsh_u8 *drbg, FILE *outf, bool tv)
+lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy, int ent_size, const lsh_u8 *add_input, int add_size, int output_bits, int cycle, lsh_u8 *drbg, FILE *outf, bool tv, int counter)
 {
 	lsh_err result;
 
@@ -390,8 +390,6 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy,
 
 	int r, w;
 	int STATE_MAX_SIZE;
-
-	static int counter = 1;
 
 	if(LSH_IS_LSH256(ctx->setting.drbgtype))
 	{
@@ -534,7 +532,7 @@ lsh_err drbg_lsh_output_gen(struct DRBG_LSH_Context *ctx, const lsh_u8 *entropy,
 	if(!tv)
 	{		//***** TEXT OUTPUT - output(count) *****//
 		printf("output%d = ", counter); // console output
-		fprintf(outf, "output%d = ", counter++);
+		fprintf(outf, "output%d = ", counter);
 		for(int i = 0 ; i < output_bits / 8 ; i++)
 		{
 			printf("%02x", drbg[i]);	// console output
@@ -590,7 +588,7 @@ lsh_err drbg_lsh_digest(lsh_type algtype, lsh_u8 (*entropy)[64], int ent_size, l
 	int result;
 
 	ctx.setting.drbgtype = algtype;
-	ctx.setting.refresh_period = 2;
+	ctx.setting.refresh_period = 1;
 
 	ctx.setting.prediction_resistance = false;	//예측내성
 	ctx.setting.using_perstring = true;		//개별화
@@ -615,9 +613,9 @@ lsh_err drbg_lsh_digest(lsh_type algtype, lsh_u8 (*entropy)[64], int ent_size, l
 	for(int i = 0 ; i < ctx.setting.refresh_period + 1 ; i++)
 	{
 		if(ctx.setting.prediction_resistance || ctx.setting.refresh_period == 0)
-			result = drbg_lsh_output_gen(&ctx, entropy[i+1], ent_size, add_input[i], add_size, output_bits, cycle, drbg, outf, false);
+			result = drbg_lsh_output_gen(&ctx, entropy[i+1], ent_size, add_input[i], add_size, output_bits, cycle, drbg, outf, false, i + 1);
 		else
-			result = drbg_lsh_output_gen(&ctx, entropy[i], ent_size, add_input[i], add_size, output_bits, cycle, drbg, outf, false);
+			result = drbg_lsh_output_gen(&ctx, entropy[i], ent_size, add_input[i], add_size, output_bits, cycle, drbg, outf, false, i + 1);
 
 		if (result != LSH_SUCCESS)
 			return result;
@@ -658,9 +656,9 @@ lsh_err drbg_lsh_testvector_pr_digest(lsh_type algtype, bool pr, lsh_u8 *ent1, l
 	for(int i = 0 ; i < ctx.setting.refresh_period + 1 ; i++)
 	{
 		if(ctx.setting.prediction_resistance || ctx.setting.refresh_period == 0)
-			result = drbg_lsh_output_gen(&ctx, entropy[i+1], ent_byte, additional[i], add_byte, output_bits, cycle, drbg, NULL, true);
+			result = drbg_lsh_output_gen(&ctx, entropy[i+1], ent_byte, additional[i], add_byte, output_bits, cycle, drbg, NULL, true, i + 1);
 		else
-			result = drbg_lsh_output_gen(&ctx, entropy[i], ent_byte, additional[i], add_byte, output_bits, cycle, drbg, NULL, true);
+			result = drbg_lsh_output_gen(&ctx, entropy[i], ent_byte, additional[i], add_byte, output_bits, cycle, drbg, NULL, true, i + 1);
 
 		if (result != LSH_SUCCESS)
 			return result;
@@ -699,7 +697,7 @@ lsh_err drbg_lsh_testvector_no_pr_digest(lsh_type algtype, bool pr, lsh_u8 *ent,
 
 	for(int i = 0 ; i < ctx.setting.refresh_period + 1 ; i++)
 	{
-		result = drbg_lsh_output_gen(&ctx, ent_re, ent_byte, additional[i], add_byte, output_bits, cycle, drbg, NULL, true);
+		result = drbg_lsh_output_gen(&ctx, ent_re, ent_byte, additional[i], add_byte, output_bits, cycle, drbg, NULL, true, i + 1);
 
 		if (result != LSH_SUCCESS)
 			return result;
